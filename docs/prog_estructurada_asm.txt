@@ -1,0 +1,172 @@
+
+ Introduccion
+ -------------
+
+Este texto muestra equivalencias en ensamblador de las estructuras
+habituales de control en C/C++: for, while, do/while, if, if/else
+
+
+ IF, IF/ELSE
+ -------------
+
+* Ej. IF:
+
+  if (a > b)
+  {
+    a = 0;
+  }
+    
+Implementacion simple. Para a -> r0, y b -> r1
+
+      cmp r0,r1
+      ble skip_mov    @ le damos la vuelta a la condicion para saltarnos el bloque {}
+
+      mov r0,#0       @ a = 0; Si era mayor, seguira por aqui
+
+  skip_mov:
+      @ fin: llegamos aqui por los dos caminos
+
+
+* Ej. IF/ELSE:
+
+  if (a > b)
+  {
+    a = 0;
+  }
+  else
+  {
+    b = 0;
+  }
+
+Implementacion 1:
+
+      cmp r0,r1
+      ble skip_a0     @ le damos la vuelta a la condicion para saltarnos el bloque {}
+
+      mov r0,#0        @ a = 0; Si era mayor, seguira por aqui
+      b   if_else_done @ branch para evitar caer al segundo bloque {}
+  skip_a0:
+      mov r1,#0        @ b = 0
+  if_else_done:
+      @ fin: llegamos aqui por los dos caminos
+
+
+Implementacion 2:
+
+      cmp r0,r1
+      bgt skip_b0     @ la condicion es igual que en C, pero los bloques iran al reves
+
+      mov r1,#0        @ b = 0; Si era menor, seguira por aqui
+      b   if_else_done @ branch para evitar caer al segundo bloque {}
+  skip_b0:
+      mov r0,#0        @ a = 0
+  if_else_done:
+      @ fin: llegamos aqui por los dos caminos
+
+
+
+ ---------
+ DO/WHILE
+ ---------
+
+La estructura "do {...} while" se usa poco, por ser poco segura. Siempre entra al
+menos 1 vez; suele ser mas seguro comprobar antes de entrar ("while (...) {...}").
+En ensamblador se usan este estructuras de este tipo al ser mas cortas que "for" o "while"
+
+Ej.
+
+  i = 100;
+  do 
+  {
+    i--;
+  } while (i != 0);
+
+Implementacion 1. Para i -> r0
+
+      mov r0,#100        @ i = 100
+  do_while_loop:
+      sub r0,r0,#1       @ i--
+      cmp r0,#0
+      bne do_while_loop  @ si no es igual a 0, saltamos al loop
+
+Implementacion 2. 
+
+      mov r0,#100
+  do_while_loop:
+      subs r0,r0,#1     @ i-- y actualizamos el condition register (como cmp con 0)
+      bne do_while_loop @ si no es igual a 0, saltamos al loop
+
+ ------
+  WHILE
+ ------
+
+La estructura exige una comprobacion al principio como minimo.
+
+Ej. (len viene de un parametro de funcion, su valor desconocido)
+
+  while (len != 0)
+  {
+    len--;
+  }
+
+Implementacion 1. Para len -> r0.
+
+  while_loop:
+    cmp r0,#0
+    beq exit_while_loop   @ le damos la vuelta a la condicion para salir de bloque {}
+    
+    sub r0,r0,#1          @ len--
+    b   while_loop        @ continuamos con el while
+  exit_while_loop:
+
+
+Implementacion 2. Es mas rapida porque en el bucle solo hay 1 inst. de salto
+
+    cmp r0,#0
+    beq exit_while_loop   @ una comprobacion antes de entrar en el bucle
+
+  while_loop:
+
+    subs r0,r0,#1          @ len-- y actualizamos CR
+    bne  while_loop        @ continuamos con el while SOLO SI len != 0
+
+  exit_while_loop:
+
+Aunque esta implementacion es mas larga, su bucle es mas corto, por lo que se considera
+mas recomendable.
+
+ -----
+  FOR
+ -----
+
+La estructura de control "for" es identica a while. Es solo una forma compacta de "while"
+
+  for (i=0; i<100; i++)
+
+es lo mismo que:
+
+  i = 0;
+  while (i<100)
+  {
+    i++;
+  }
+
+Por lo tanto, para asm se aplica lo mismo que vimos en "while".
+
+NOTA:
+ Como los bucles "do {} while ()" son mas sencillo que "for (..." en ensamblador,
+a menudo se implementan de esta manera.
+
+La regla para sustituir un for por un do/while, es que uno debe estar seguro que
+el bucle se ejecuta siempre como minimo 1 vez.
+
+  int add_nums (char* str, int len)
+  {
+      int total = 0;
+      for (i=0; i<len; i++) <- NO debemos usar do/while, porque len podria ser 0
+      {
+        ...
+
+
+
+

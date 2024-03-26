@@ -1,0 +1,432 @@
+0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+Registros
+---------
+
+Los registros enteros genericos son r0-r15. Tienen 32 bits.
+De ellos, hay algunos casos especiales:
+
+- r11: frame pointer "fp". Se puede usar libremente trabajando en asm 
+
+- r13: stack pointer "sp". Se suele usar (por convencion) como puntero de pila. Esta es una 
+  decision proveniente de los programadores de compiladores de C, y no tiene implicaciones en 
+  hardware. No conviene tocarlo.
+ 
+- r14: link register "lr". La instruccion de salto generica "bl" rellena este registro con la 
+  direccion de "retorno". Esta es la direccion de la siguiente inst. despues de "bl".
+  r14 tambien puede ser usado normalmente, si no es necesario llamar a subrutinas.
+
+- r15: program counter "pc". Este registro siempre contiene la direccion de la inst. en ejecucion (+4).
+  Modificar el valor de r15 implica cambiar la ejecucion del programa, por ello este registro no se
+  puede usar como registro generico.
+  
+
+Instrucciones / ISA
+-------------------
+
+Los procesadores RISC en general, incluyendo ARM, son arquitecturas "LOAD/STORE".
+Esto quiere decir que sus instrucciones se agrupan principalmente en 2 grupos:
+
+- Calculo. Instrucciones que usan registros para hacer un calculo y depositan el resultado
+  en otro registro.
+
+    Ej: add r0,r1,r2   @ opera r0 = r1 + r2
+
+- Lectura o escritura en memoria (load/store). Lee un dato de memoria y lo deposita en un registro,
+  o escribe en memoria el dato de un registro.
+
+    Ej:  ldr r0,[r1]  @ lee la palabra de 32 bits apuntada por r1, y deja el dato en r0
+         str r0,[r1]  @ escribe el dato que guarda r0 en un el 
+
+Casi todas las instrucciones siguen un formato similar a los dos ejemplos mencionados. 
+En el lado opuesto se encuentran las arquitecturas tradiciones CISC (previas a los años 80, como 
+Intel x86 o Motorola 68k), que pueden mezclar computo con acceso a memoria. 
+
+   Ej: add.l d0,(a0)  ; inst. de arquitectura CISC 68000. Sumar 32 bits del reg. d0 
+                        a la memoria apuntada por el registro a0
+
+El conjunto de instrucciones se denomina, en la jerga de la industria, "ISA": instruction set
+architecture.
+
+Instrucciones de calculo de enteros
+-----------------------------------
+
+Su formato general es:
+
+  Instr./sufijo1/sufijo2  reg. resultado, reg. operador1, shifter operand
+
+Las instrucciones posibles son:
+
+    add -> "+"
+    sub -> "-"
+    rsb -> "-" (en orden inverso) 
+    eor -> "^" (xor)
+    orr -> "|" (or)
+    and -> "&" (and)
+    bic -> "& ~" (and not)
+    adc -> "+" con carry
+    sbc -> "-" con carry
+    
+No existen instrucciones de desplazamiento (en C <<,>>) porque estan integradas
+en el shifter operand.
+
+Algunas instrucciones solo tienen dos operadores, y su formato es:
+
+  Instr./sufijo1/sufijo2  reg. resultado, shifter operand
+
+Las inst. de dos operadores son:
+
+    mov -> mover o "="
+    mvn -> negacion de los bit "not"
+
+Ej.:
+    mov  r1,r3
+    mov  r4,#67
+    mov  r1,r2,asr #1
+
+Sufijo1; las instrucciones pueden llevar un sufijo condicional, de manera que se ejecutara
+solo si cumple la condicion descrita. A esto se le llama "predicacion".
+La condicion se refiere a una comparacion o operacion anteriormente realizada, como se 
+podra ver mas adelante. Los sufijos son:
+
+    eq  -> iguales 
+    ne  -> diferentes
+    gt  -> mayor que (en numeros signed)
+    lt  -> menor que (en  numeros signed)
+    ge  -> mayor o igual (en numeros signed)
+    le  -> menor o igual (en numeros signed)
+    hi  -> mayor que (num. unsigned)
+    hs  -> mayor o igual que (num. unsigned)
+    lo  -> menor que (num. unsigned)
+    ls  -> menor o igual que (num. unsigned) 
+    mi  -> negativo
+    pl  -> positivo (0 incluido)   
+    cs  -> carry set (una suma o resta excedio el num. de bits disponible)
+    cc  -> carry clear (no hubo exceso)
+    vs  -> overflow (el signo de una suma/resta no es el correcto por no caber el res. en 32 bits) 
+    vc  -> no overflow
+
+Sufijo2; todas estas instrucciones de calculo pueden ademas generar una comparacion con 0, 
+si se les añade el sufijo "s".
+    
+    ej: subs    r4,r5,r6    ; resta y compara el resultado con 0
+        movlt   r4,#0    ; Si la operacion anterior es <0, r4 = r5
+
+Shifter operand; como 3r argumento, se puede usar cualquiera de estas formas:
+
+    reg.             -> add r0,r1,r2         -> r0 = r1 + r2
+    #numero          -> sub r0,r1,#55        -> r0 = r1 - 55 
+    reg.,lsr #numero -> and r0,r1,r2,lsr #3  -> r0 = r1 & (r2 >> 3) (UNSIGNED)
+    reg.,lsl #numero -> orr r0,r1,r2,lsl #20 -> r0 = r1 | (r2 << 20) 
+    reg.,asr #numero -> mov r0,r1,asr #12    -> r0 = r2 >> 12 (SIGNED)
+    
+
+Excepciones; las siguientes inst. de calculo no tienen shifter operand, solo 
+admiten registros como 3er operador.
+
+    mul  r0,r1,r2       @ r0 = r1 * r2
+    mla  r0,r1,r2,r3    @ es un operacion con 4 operadores
+                          r0 = r1 * r2 + r3
+
+    Los sufijos se mantienen para las inst. de multiplicacion
+
+    clz  r0,r1          @ "count leading zeros" 
+                        @ r0 = cantidad de bits a cero empezando por el de 
+                        @ mayor valor
+
+    Clz solo admite el sufijo1.    
+    
+No existe la division (en la mayoria de las CPU ARM existentes) 
+    
+Comparaciones
+--------------
+
+Formato (muy similar a mov,mvn):
+
+  Instr./sufijo1 reg. operador 1, shifter operand
+
+Solo son dos instrucciones:
+
+    cmp -> compara el 1er y 2o operador, deja resultado en el SR
+    cmn -> compara el 1er y la negacion (NOTS) del 2o operador, deja resultado en el SR
+
+Sufijo1; es la predicacion, el sufijo condicional. Un cmp puede ser ejecutado de forma
+condicional, aunque no se recomienda el uso.
+
+    cmp r0,#10      @ if (x == 10) {
+    moveq r0,#0     @   x = 0;
+    cmpeq r1,#20    @   if (y == 20) {
+    moveq r1,#0     @     y = 0;
+                    @ }}
+
+
+Ej. de comparaciones:
+
+    cmp r3,r6           @ compara r3 con r6
+    cmp r4,#50          @ compara r4 con el numero 50
+    cmp r0,r3,lsl #2    @ compara r0 y r3*4
+
+Instruction flow, saltos
+------------------------
+
+El ARM es un procesador clasico en el tema de la condiciones: existe un registro
+especializado llamado SR o status register que registra los resultados logicos de
+algunas operaciones. Cada comprobacion dispone de 1 bit o flag, y son:
+
+- N: Negative flag ->  Es copia el bit 31 del resultado de la ultima operacion.
+                       En binario (complemento a 2), esto indica el signo. 1=negativo, 0=positivo
+
+- V: Overflow flag ->  1 cuando la ultima suma/resta no entra en 31 bits con signo 
+                       (0x7fffffff + 1  = 0x80000000 = numero negativo)
+
+- Z: Zero flag.    ->  Es 1 cuando el resultado de la ultima operacion fue 0
+
+- C: Carry flag.   ->  Refleja si hubo acarreo en la ultima suma/resta
+
+Posteriormente, otras instrucciones puede usar esos resultados para saltar o no.
+Ejemplo 1 (los comentarios van con @):
+
+bucle:
+    subs r2,r2,#1    @ r2=r2 - 1  El sufijo "s" solicita actualizacion del SR
+                     @ El flag Z se pondra a 1 si el r2=0
+    bne  bucle       @ Comprueba el SR y salta a "bucle" si el flag Z=0
+
+Ejemplo 2 (misma funcionalidad)
+
+bucle:
+    sub  r2,r2,#1    @ r2=r2 - 1  
+    cmp  r2,#0       @ Compara r2 con el valor 0 (en realidad, resta r2 - 0)
+                     @ El SR es marcado como resultado de esta comparacion
+    bne  bucle       @ Comprueba el SR y salta a "bucle" si el flag Z=0
+
+Los saltos posibles son:
+
+    beq  -> saltar si son iguales 
+    bne  -> saltar si son diferentes
+    bgt  -> saltar si es mayor (en numeros signed)
+    blt  -> saltar si es menor (en  numeros signed)
+    bge  -> saltar si es mayor o igual (en numeros signed)
+    ble  -> saltar si es menor o igual (en numeros signed)
+    bhi  -> mayor que (num. unsigned)
+    bhs  -> saltar si es mayor o igual que (num. unsigned)
+    blo  -> saltar si es menor que (num. unsigned)
+    bls  -> saltar si es menor o igual que (num. unsigned) 
+    bmi  -> saltar si es negativo
+    bpl  -> saltar si es positivo (0 incluido)   
+
+(Lo siguientes saltos no se usan desde lenguajes compilados como C).
+    bcs  -> saltar si se produjo carry set 
+            (una suma o resta excedio 32 bits)
+    bcc  -> carry clear (no hubo exceso)
+    bvs  -> saltar si se produjo 
+            (el signo de una suma/resta no es correcto por no caber en 32 bits, signed) 
+    bvc  -> no overflow
+
+Como se puede observar, son las mismas condiciones que se mencionaban como sufijos en
+las instrucciones aritmeticas.
+
+Saltos incondicionales.
+Se puede saltar a cualquier otro punto del programa usando la instruccion "b".
+
+  Ej.:  b salida  @ El programa salta a la etiqueta salida
+        
+Saltos preparando retorno, y saltos de retorno.
+Tambien conocidos como saltos a subrutina. En C equivale a llamar a una funcion.
+
+  Ej.:    bl Cuadrado  @ Saltamos a "Cuadrado", pero la direccion a la 
+                       @ siguiente instruccion ("add") queda guardada en r14 (aka "lr")
+          add r0,r0,#1
+          ...
+        Cuadrado:
+          mul r0,r1,r1
+          bx lr        @ Saltar a la direccion guardada en "lr", retornamos.
+
+Saltos a puntero. Se pueden realizar de diferentes formas:
+
+  Ej.:  mov pc,r1  @ saltar a la direccion apuntada por r1
+        b   r1     @ idem
+        bx  r1     @ idem
+
+Instrucciones LOAD/STORE
+------------------------
+
+Formato general para instrucciones de lectura:
+
+  Instr./sufijo1  <reg. resultado>, [addressing args.]
+
+El sufijo1 se refiere a la predicacion explicada anteriorment (ej. ldreq, ldrgt...)
+
+Las instrucciones de lectura son:
+    
+    ldrb    ; leer 8 bits (byte)
+    ldrsb   ; leer 8 bits  y extender el signo a los 24 restantes
+    ldrh    ; leer 16 bits (halfword)
+    ldrsh   ; leer 16 bits y extender el signo a los 16 restantes
+    ldr     ; leer 32 bits (word)
+
+    Ej.:  ldr r0,[r1]
+
+Hay que usar la apropiada dependiendo del tipo de dato. Las 
+correspondencias tipicas con C son:
+
+    ldrb    ; leer unsigned char
+    ldrsb   ; leer signed char
+    ldrh    ; leer unsigned short
+    ldrsh   ; leer signed short
+    ldr     ; leer signed/unsigned int. Tambien lee punteros de cualquier tipo.
+
+Formato general para instrucciones de escritura:
+
+  Instr./sufijo1  <reg. a guardar>, [addressing args.]
+
+Las instrucciones de escritura son:
+
+    strb    ; escribir 8 bits (byte)
+    strh    ; escribir 16 bits (halfword)
+    str     ; escribir 32 bits (word)
+
+    Ej.:  str r0,[r1]
+
+Modos de direccionamiento (addressing modes). Sirven tanto para lectura
+como para escritura:
+
+    [reg.]                      -> *ptr
+    [reg.],#num                 -> *ptr; ptr += num
+    [reg.,#num. offset]         -> *(ptr + offset) 
+    [reg., reg.]                -> *(ptr + x)
+    [reg., reg., lsl #num]      -> *(ptr + (x << num))
+    [reg., reg., lsr #num]      -> *(ptr + (x >> num))
+    [reg., reg., asr #num]      -> *(ptr + (x >> num))
+
+La direccion de lectura/escritura es la expresada entre los corchetes.
+
+    Ej.: ldr r4,[r0]  -> leer un enteros de la direccion apuntada por r0
+
+Las equivalencias en C son aproximadas, ya que C escala indices y offset por el tamaño
+del dato y el ensamblador no lo hace.
+
+Ejemplos:
+
+    Inst.                       Equivalencia C
+    -----                       --------------
+    ldr  r5,[r0]             -> r5 = *r0, actuando r0 como puntero a int
+    ldr  r2,[r1,r3,lsl #2]   -> r2 = r1[r3], lsl #2 (<<2) es necesario para escalar el indice *4)
+    ldrb r2,[r1,r3]          -> r2 = r1[r3], r1 actua como puntero a char, no hace falta escalar  
+    ldr  r0,[r3],#4          -> r0 = *r3++, para pasar al siguiente int hay que sumar 4
+
+    str  r0,[r1]             -> *r1 = r0
+    strb r3,[r6,#5]          -> r6[5] = r3, actuando r6 como puntero a char
+    str  r3,[r6,#20]         -> r6[5] = r3, actuando r6 como puntero a int
+
+
+Ademas de las inst. simples de lectura y escritura, existe 2 mas capaces de
+trabajar con multiples registros a la vez. Su coste es mayor y se usan principalmente
+para guardar y restaurar el estado de los registros al entrar y salir de una subrutina (funcion).
+Su explicacion completa queda fuera del objetivo de esta referencia.
+
+    ldm  reg. puntero,{ reg1,reg2...regN}   ; leer multiples registros
+    stm  reg. puntero,{ reg1,reg2...regN}   ; escribir multiples registros
+
+Prolog/epilog
+-------------
+
+En el contexto de compiladores de C/C++, se llama prolog/epilog a las inst. de ensamblador que se 
+encargan de entrar y salir de una funcion.
+Puesto que los registros son compartidos por todo el programa, cada funcion debe preservar sus
+valores para que, al terminar, la funcion anterior que le llamo puedo continuar su ejecucion 
+normalmente.
+El prolog se encarga por tanto de salvar los registros (que vayan a ser usados) y el epilog de
+restaurarlos. El area de memoria que se usa para esto es la llamada "pila" ("stack").
+
+Operaciones del prologo:
+- Subir r4-r11 al stack, y subir tambien la direccion de retorno (que estaba en r14). 
+  A menudo se realiza con una sola instruccion store multiple "stm".
+- Copiar (opcionalmente) los argumentos de la subrutina (r0-r3) a los registros temporales locales (r4-r11).
+- Preparar otras variables locales en los registros temporales que queden (r4-r11).
+
+Durante la funcion:
+- Ejecutar las operaciones de la funcion y llamar a otras subrutinas (si es necesario usando "bl"), 
+  asumiendo que r0-r3, r12 y r14 pueden ser modificadas por ellas.
+- Poner el valor de retorno (si es necesario) en r0
+    
+En el epilogo:
+- Restaurar r4-r11 sacandolos de la pila. 
+- Sacar la direccion de retorno de la pila y ponerla en r15 (pc).
+  A menudo se realiza con una sola instruccion de carga multiple "ldm".
+  La forma standard de retornar actualmente es usar la inst. de salto "bx"
+
+Este ejemplo salva todos lo registros utilizables en condiciones normales:
+
+entrada_funcion:
+
+    stmdb   sp!,{r4,r5,r6,r7,r8,r9,r10,r11,r12,r14}
+
+    ...contenido funcion
+
+    ldmia   sp!,{r4,r5,r6,r7,r8,r9,r10,r11,r12,r14}
+    bx      lr
+
+
+Pitfalls
+--------
+
+Errores y problemas comunes que se encuentran al programar:
+
+- Inst. sin shifter operand.
+
+  Algunas inst. aritmeticas como mul o mla no permiten el uso de shifter operand
+
+  mul r0,r1,#5   <--- inst. ILEGAL
+
+- Warning de registros en el uso de mul.
+
+  Los 1os micros ARM no permitian repetir reg. en la inst. mul
+
+  mul r0,r0,r1  <--- ILEGAL en CPUs antiguas
+  mul r0,r1,r0  <--- legal en todas
+
+- Limites en los numeros inmediatos.
+
+  El shifter operan permite poner un numero inmediato, pero no cualquiera
+  
+  add r2,r3,#0xaa     <-- legal
+  add r2,r3,#0xbb0000 <-- legal
+
+  add r2,r3,#0x1234500  <-- ILEGAL
+
+  La limitacion es que el num. inmediato puede ser se compone asi:
+
+  (+/- num. de 8 bits) << (0,2,4,6,8,..30)
+
+  En caso de que el numero no se pueda formar con esta regla, lo mejor es 
+  componerlo por partes usando add o orr:
+  
+  mov r0,#0x4500            @ r0 = 0x00004500
+  orr r0,r0,#0x230000       @ r0 = 0x00234500
+  orr r0,r0,#0x1000000      @ r0 = 0x01234500
+
+- Irregularidad de direccionamiento en ldrh/ldrsh/strh
+
+  Lo modos de dir. indexados con escala NO se pueden usar con ldrh/ldrsh/strh.
+  Estas inst. fueron incluidas mas tarde en la ISA, y tuvieron que recortar algunos modos.
+  
+  ldr r0,[r1, r2, lsl #2]  <-- legal
+
+  ldrh r0,[r1,r2, lsl #1]  <-- ILEGAL
+
+- Anomalia en la predicacion de lectura/escritura.
+
+  Normalmente la predicacion se usa como sufijo despues de la inst.:
+
+  addne r0,r1,r2
+
+  Existe una anomalia en la sintaxis ARM del ensamblador GCC; las lecturas lo usan antes 
+  del tipo de lectura:
+
+  ldrne   r0,[r1]  <-- legal
+  ldrsbne r0,[r1]  <-- ILEGAL
+  ldrnesb r0,[r1]  <-- legal
+
+
+
+
+

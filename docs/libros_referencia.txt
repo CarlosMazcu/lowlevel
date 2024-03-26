@@ -1,0 +1,7 @@
+- ARM Assembly Language Programming.
+  Peter Knaggs. 
+  Descargable de la web 
+
+- ARM System Developer's Guide. Designing and Optimizing System Software.
+  Andrew Sloss.
+  Este libro es de pago pero es recomendable por sus explicaciones detalladas sobre optimizacion.

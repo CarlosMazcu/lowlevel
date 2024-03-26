@@ -1,0 +1,273 @@
+
+NOTA:
+Campos de bits, o bitfields en ingles, es el nombre que se le da a un tramo de bits dentro de un
+numero en binario. Por ejemplo, en un pixel de 32 bits ARGB, cada color es un bitfield de 8 bits
+de longitud.
+Representacion tipica de los bitfields:
+
+31-----------------------------0
+AAAAAAAARRRRRRRRGGGGGGGGBBBBBBBB
+
+
+Operaciones logicas (solo enteros)
+----------------------------------
+
+Son operaciones sencillas que solo operan 2 bits (al contrario que la suma o la multiplicacion, que
+implican a otros bits por el acarreo). La excepcion es NOT, mas sencilla aun, que solo opera 1 bit.
+
+- AND ("&" en C/C++)
+
+  La operacion AND dara 1 si los 2 bits operados son 1, en cualquier otro caso dara 0.
+  Por esa razon, AND se usa principalmente para BORRAR bits, ponerlos a 0. A este proceso se le
+  llama habitualmente ENMASCARAR.
+
+  0 & 0 = 0
+  0 & 1 = 0
+  1 & 0 = 0
+  1 & 1 = 1
+
+  Ej:     01010101010101010101010101010101   Hexadecimal:   55555555 -> numero a enmascarar
+        & 00000000111111111111111100000000                & 00FFFF00 -> mascara
+        ----------------------------------                ----------
+          00000000010101010101010100000000                  00555500
+
+- OR ("|" en C/C++)
+  
+  OR dara 1 si alguno de los 2 bits operados es 1.
+  Su uso principal es por tanto, ACTIVA o poner bits a 1.
+
+  0 | 0 = 0
+  0 | 1 = 1
+  1 | 0 = 1
+  1 | 1 = 1
+
+  Ej:     01010101010101010101010101010101   Hexadecimal:   55555555
+        | 00000000111111111111111100000000                | 00FFFF00
+        ----------------------------------                ----------
+          01010101111111111111111101010101                  55FFFF55
+
+- NOT ("~" en C/C++)
+
+  NOT opera en bits individuales, simplemente invirtiendolos. 0 pasa a ser 1, 1 pasa a ser 0
+
+  ~00000101 = 11111010     En hexadecimal: ~03 = F6
+
+  NOT guarda cierta relacion con el cambio de signo de un numero: -A = (~A) + 1
+  Se usa principalmente para invertir mascaras, de manera que una mascara que se usaba para 
+  aislar un bitfield de un numero, aisle (negada) los bits complementarios en otro.
+
+  (A & Mask) | (B & (~Mask)) <- Se encajan bitfields complementarios
+
+- XOR ("^" en C/C++)
+
+  XOR solo es usado por programadores con mucha soltura en operaciones logicas, y no sera visto
+  en este curso. Se puede resumir como: dara 1 si los operadores son diferentes, 0 si son iguales.
+
+  El unico uso comun que se puede encontrar es el de "toggle". Haciendo XOR de un bit con 1 se
+  obtiene una negacion de ese bit, sin alterar los demas:
+
+   01110100
+  ^00001000
+   --------
+   01111100 <-- Hemos invertido el valor del bit sin tocar los demas
+
+   Por ello se pueden encontrar expresiones de este tipo:
+
+   status->flags ^= LOOKING_LEFT_OR_RIGHT;  // "alternar izquierda-derecha"
+
+
+
+Instrucciones de desplazamiento y rotacion (solo enteros)
+---------------------------------------------------------
+
+    Las operaciones de desplazamiento son similares a las que hacemos normalmente para multiplicar
+y dividir por potencias de 10 (10,100,1000...). Para ello normalmente añadimos ceros en caso 
+de multiplicar, o eliminamos las cifras inferiores en caso de dividir.
+
+1234 x 1000 = 1234000
+1234 / 100  = 12  (como trabajamos en enteros, aqui obviamos los decimales)
+
+    Estas operaciones se pueden ver como un desplazamiento de la cifras a la izquierda o a la 
+derecha, de ahi el nombre cuando se usan en informatica. Ademas, el ordenador trabaja en 
+binario, por lo que los desplazamientos funcionan en potencias de 2, y no de 10.
+
+   Generalmente los desplazamientos son mucho mas rapido que la multiplicacion y la division (hasta 
+10 y 60 veces mas respectivamente).
+
+    Los desplazamientos tienen dos usos principales: uno es el mencionado, multiplicar y dividir.
+El otro es asistir al manejo de campos de bits. Por ejemplo, los pixels habitualmente se componen
+de 3 campos de 8 bits en una palabra de 32: 00000000 RRRRRRRR GGGGGGGG BBBBBBBB.
+Los desplazamientos ayudan a extraer y colocar los campos de bits correspondientes a cada color.
+
+- Desplazamiento logico a la izquierda "<<". Logical Shift, en ingles.
+
+  Empuja los bits a la izquierda n veces, insertando ceros por la derecha.
+  Cada bit empujado a la izquierda supone multiplicar por 2.
+  x << 1 equivale a x*2
+  x << 2 equivale a x*4
+  x << 3 equivale a x*8
+  ...
+  x << 8 equivale a x*256
+
+  Si el desplazamiento + la longitud del numero en bits superan 32 bits, los bits superiores se 
+  perderan, produciendo un resultado matematicamente incorrecto.
+
+- Desplazamiento logico a la derecha ">>" con unsigneds. Logical shift.
+
+  Empuja los bits a la derecha n veces, insertando ceros por la izquierda.
+  Cada bit empujado a la izquierda supone dividir por 2.
+  Los resultados solo son correctos para numeros sin signo, es decir tipos "unsigned".
+
+  x >> 1 equivale a x/2
+  x >> 2 equivale a x/4
+  x >> 3 equivale a x/8
+  ...
+  x >> 8 equivale a x/256
+
+- Desplazamiento aritmetico a la derecha ">>" con signeds. Arithmetic shift.
+
+  Empuja los bits a la derecha n veces. El bit de signo, que el que esta mas a la  izquierda 
+  (el 31 en un ordenador de 32 bits) se replica hacia abajo, rellenando los n bit desplazados.
+  Cada bit empujado a la izquierda supone dividir por 2, con la diferencia de que
+  el resultado es correcto para numeros con signo (tipos "signed").
+  Una diferencia entre la division normal "/" y el desplazamiento, es que la division redondea
+  hacia 0, mientras que el desplazamiento redondea hacia menos infinito.
+
+  -16  / 8 = -2
+  -16 >> 3 = -2
+  pero
+  -7  / 8 = 0
+  -7 >> 3 = -1
+
+- Rotaciones.
+
+  Las rotaciones son similares a los desplazamientos logicos, pero en lugar de insertar
+  ceros los bits que salen por un lado entran por el otro.
+  El lenguaje C no contempla la operacion, aunque practicamente todas las CPUs tienen instruccion 
+  para ello. Por ejemplo, una inst. ARM rotando el registro r1 a la derecha 4 bits:
+  
+  mov r0,r1,ror #4
+
+  Las rotaciones pueden ayudar puntualmente en optimizaciones, pero al igual que EOR es una 
+  operacion reservada a programadores que trabajan habitualmente en bajo nivel.
+  Normalmente se emulan en C/C++ usando una combinacion de "<<", ">>" y "|".
+
+
+Para que se usan los operadores logicos y los desplazamientos en la practica?
+-----------------------------------------------------------------------------
+
+- Para "levantar" o "bajar" flags. Cuando los bits de un registro o variables tienen funciones
+  especificas, como si fueran variable booleanas, es necesario usar and y or para ponerlos
+  a 0 o 1 sin alterar los bits vecinos.
+
+   ej: encender el sprite 5 en un c64:  *reg_spr_enable |= 0x20;
+
+   ej: apagar el sprite 3 en un c64:    *reg_spr_enable &= 0x4;
+
+   ej: flags de inicializacion de SDL
+       
+      #define SDL_INIT_TIMER          0x00000001
+      #define SDL_INIT_AUDIO          0x00000010
+      #define SDL_INIT_VIDEO          0x00000020  
+      #define SDL_INIT_JOYSTICK       0x00000200  
+   
+      SDL_Init (SDL_INIT_VIDEO | SDL_INIT_AUDIO); // En una variable tipo int se estan
+                                                      incluyendo varios flags
+
+- Para componer/empaquetar varios numeros de diferentes tamaños en un char/short/long
+
+   ej: 3 colores de 5 bits cada uno en un short: 16 bits en orden "0bbbbbgggggrrrrr"
+
+   ej: propiedades de una particula en un char:  1 bit para visible si/no
+                                                 1 bit para colision si/no
+                                                 6 bits para nivel de blend con el fondo
+                                                 total: 8 bits orden "vcbbbbbb"
+
+   El empaquetamiento de bits es el uso mas habitual y se usa extensivamente en programacion.
+
+- Para trabajar en coma fija
+
+  Multiplicar o dividir por potencias de 2 (1,2,4,8,16,32...) de la manera mas rapida
+
+- Para eliminar cifras de sobra para contadores ciclicos
+
+     res = tabla_con_16_valores [ indice & 15];  // El "& 15" restringe los valores entre 0-15
+  
+- Componer varios indices para acceder tablas/texturas de 2 (o mas) dimensiones  
+
+     indice_tab = x | (y << 10); // version optimizada de x + (y*1024)
+
+- Para algoritmos rapidos de "comprobar pertenencia".
+  Ej: Tenemos un conjunto de numeros "marcados", y al recibir numero del input queremos comprobar si pertenece
+  a ese conjunto.
+  Las soluciones tipicas son: a) mantener una lista de marcados 
+                              b) usar un array de booleanos, que indican si cada posible numero pertene o no
+  Usando bits podemos implementar la solucion b) de una manera muy efectiva. Cada palabra "int" almacena 32 o 64 bits
+  con lo que la inicializacion del array es muy rapida, y el footprint de memoria es muy inferior.
+
+- Para optimizaciones de branching (especialmente en CPUs actuales)
+
+  Se pueden eliminar o reducir condicionales "if" usando operaciones logicas; puesto que los saltos condicionales son 
+  caros a menudo se usan estos mecanismos.
+
+  ej: Mayor de 2 numeros; el metodo sin salto es mas largo, pero puede ser menos costoso en cpus actuales
+
+      Metodo normal: if ( a < b) 
+                         max = b; 
+                     else 
+                         max = a;
+
+      Metodo sin salto: signed long d = a - b;
+                        mask = d >> 31; // segun el signo de d, dara todo 1s o todo 0s: 111..111 o 000...000
+                        max = (b & mask) | (a & (~mask));
+
+
+- Para componer graficos en monocromo. Este es un uso tradicional que todavia se puede encontrar 
+  pero tiende a desaparecer.
+  La palabra "bitmap" para referirse a graficos se remonta a los ordenadores en blanco y negro.
+
+  ej: Composiciones con caracteres de 8x8 pixels.
+      En este ejemplo, para mejorar la visibilidad "-" representa el 0 y "*" el 1
+
+    Recorte/ enmascaramiento con AND
+
+   ********     --------     --------   
+   *------*     -******-     --------   
+   *--**--*     -******-     ---**---   
+   *-****-*     -******-     --****--   
+   *-****-* AND -******-  =  --****--   
+   *--**--*     -******-     ---**---   
+   *------*     -******-     --------   
+   ********     --------     --------   
+
+    Inclusion con OR
+
+   ********     --------     ********   
+   *------*     -******-     ********   
+   *------*     -******-     ********   
+   *------*     -******-     ********   
+   *------* OR  -******-  =  ********   
+   *------*     -******-     ********   
+   *------*     -******-     ********   
+   ********     --------     ********   
+
+        Inversion con NOT
+
+       --------     ********   
+       --------     ********   
+       --****--     **----**   
+       --****--     **----**   
+   NOT --****--  =  **----**   
+       --****--     **----**   
+       --------     ********   
+       --------     ********   
+
+
+
+
+
+
+
+
+
+
