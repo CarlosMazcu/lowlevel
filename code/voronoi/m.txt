@@ -1,0 +1,91 @@
+
+build/main.o:     file format elf32-littlearm
+
+
+Disassembly of section .text:
+
+00000000 <Voronoi>:
+   0:	e92d4ff0 	push	{r4, r5, r6, r7, r8, r9, sl, fp, lr}
+   4:	e1a07001 	mov	r7, r1
+   8:	e1a06001 	mov	r6, r1
+   c:	e1a04002 	mov	r4, r2
+  10:	e3a05000 	mov	r5, #0
+  14:	e1a0a003 	mov	sl, r3
+  18:	e5b73004 	ldr	r3, [r7, #4]!
+  1c:	e24dd014 	sub	sp, sp, #20
+  20:	e58d0008 	str	r0, [sp, #8]
+  24:	e58d300c 	str	r3, [sp, #12]
+  28:	e591b000 	ldr	fp, [r1]
+  2c:	e59d300c 	ldr	r3, [sp, #12]
+  30:	e0439005 	sub	r9, r3, r5
+  34:	e1a03009 	mov	r3, r9
+  38:	e0030399 	mul	r3, r9, r3
+  3c:	e3a0e000 	mov	lr, #0
+  40:	e1a09003 	mov	r9, r3
+  44:	e59d8008 	ldr	r8, [sp, #8]
+  48:	e04b100e 	sub	r1, fp, lr
+  4c:	e1a03001 	mov	r3, r1
+  50:	e0239391 	mla	r3, r1, r3, r9
+  54:	e3540001 	cmp	r4, #1
+  58:	e1a01003 	mov	r1, r3
+  5c:	da00001f 	ble	e0 <Voronoi+0xe0>
+  60:	e3a00000 	mov	r0, #0
+  64:	e3a02001 	mov	r2, #1
+  68:	e58d8004 	str	r8, [sp, #4]
+  6c:	e7973182 	ldr	r3, [r7, r2, lsl #3]
+  70:	e0433005 	sub	r3, r3, r5
+  74:	e00c0393 	mul	ip, r3, r3
+  78:	e7963182 	ldr	r3, [r6, r2, lsl #3]
+  7c:	e043300e 	sub	r3, r3, lr
+  80:	e1a08003 	mov	r8, r3
+  84:	e028c893 	mla	r8, r3, r8, ip
+  88:	e1580001 	cmp	r8, r1
+  8c:	b1a00002 	movlt	r0, r2
+  90:	e2822001 	add	r2, r2, #1
+  94:	b1a01008 	movlt	r1, r8
+  98:	e1540002 	cmp	r4, r2
+  9c:	1afffff2 	bne	6c <Voronoi+0x6c>
+  a0:	e59d8004 	ldr	r8, [sp, #4]
+  a4:	e08a0080 	add	r0, sl, r0, lsl #1
+  a8:	e1d030b0 	ldrh	r3, [r0]
+  ac:	e28ee001 	add	lr, lr, #1
+  b0:	e35e00f0 	cmp	lr, #240	; 0xf0
+  b4:	e0c830b2 	strh	r3, [r8], #2
+  b8:	1affffe2 	bne	48 <Voronoi+0x48>
+  bc:	e59d3008 	ldr	r3, [sp, #8]
+  c0:	e2855001 	add	r5, r5, #1
+  c4:	e2833e1e 	add	r3, r3, #480	; 0x1e0
+  c8:	e35500a0 	cmp	r5, #160	; 0xa0
+  cc:	e58d3008 	str	r3, [sp, #8]
+  d0:	1affffd5 	bne	2c <Voronoi+0x2c>
+  d4:	e28dd014 	add	sp, sp, #20
+  d8:	e8bd4ff0 	pop	{r4, r5, r6, r7, r8, r9, sl, fp, lr}
+  dc:	e12fff1e 	bx	lr
+  e0:	e1a0000a 	mov	r0, sl
+  e4:	eaffffef 	b	a8 <Voronoi+0xa8>
+
+Disassembly of section .text.startup:
+
+00000000 <main>:
+   0:	e92d4010 	push	{r4, lr}
+   4:	ebfffffe 	bl	0 <irqInit>
+   8:	e3a00001 	mov	r0, #1
+   c:	ebfffffe 	bl	0 <irqEnable>
+  10:	e3a00001 	mov	r0, #1
+  14:	e3a03301 	mov	r3, #67108864	; 0x4000000
+  18:	e59f1028 	ldr	r1, [pc, #40]	; 48 <main+0x48>
+  1c:	e59f2028 	ldr	r2, [pc, #40]	; 4c <main+0x4c>
+  20:	e1c100b8 	strh	r0, [r1, #8]
+  24:	e59f4024 	ldr	r4, [pc, #36]	; 50 <main+0x50>
+  28:	e5832000 	str	r2, [r3]
+  2c:	ef050000 	svc	0x00050000
+  30:	e3a02006 	mov	r2, #6
+  34:	e1a03004 	mov	r3, r4
+  38:	e3a00406 	mov	r0, #100663296	; 0x6000000
+  3c:	e59f1010 	ldr	r1, [pc, #16]	; 54 <main+0x54>
+  40:	ebfffffe 	bl	0 <main>
+  44:	eafffff8 	b	2c <main+0x2c>
+  48:	04000200 	.word	0x04000200
+  4c:	00000403 	.word	0x00000403
+  50:	00000000 	.word	0x00000000
+  54:	0000000c 	.word	0x0000000c
