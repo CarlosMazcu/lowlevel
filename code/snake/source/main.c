@@ -68,7 +68,7 @@ static void CleanScreen (unsigned short* screen)
   }
 }
 
-#if 0
+#if 1
 extern int UpdateSnake (int keypad, Snake* snake, unsigned short* screen);
 #else
 int UpdateSnake (int keypad, Snake* snake, unsigned short* screen)
@@ -105,8 +105,8 @@ int UpdateSnake (int keypad, Snake* snake, unsigned short* screen)
     if (keypad & 8)
       speed_y = 1;
 */
-    snake->speed_x = speed_x;
-    snake->speed_y = speed_y;
+   // snake->speed_x = speed_x;
+   // snake->speed_y = speed_y;
   //}
 
   // Head new pos.
