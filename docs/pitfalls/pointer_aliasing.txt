@@ -1,0 +1,195 @@
+
+* Un puntero es alias de otro puntero cuando ambos apuntan a la misma direccion 
+de memoria.
+
+  void AddVect (Vect* a, Vect* b)
+  {
+    a->x += b->x;
+    a->y += b->y;
+  } 
+
+Cuando se llama a esta funcion asi:
+
+  Vect n = {1,2};
+  AddVect(&n, &n); // <- la misma direccion a los dos argumentos
+
+los punteros a y b seran iguales, y por lo tanto uno es alias del otro.
+
+
+* Tambien se pueden hacer alias con diferente tipos:
+
+  void fast_clear (unsigned char *ptr, int len)
+  {
+    // Para rellenar la memoria mas rapido creamos un alias de tipo
+    // unsigned int
+
+    unsigned int* my_alias = (unsigned int*) ptr;
+
+    while (len > 0) {
+      *my_alias++ = 0; 
+      len -= 4;
+    }
+  }
+
+* Problemas: errores de computo
+
+  Los compiladores de C/C++ a menudo no procesan las instrucciones de C en un 
+orden estrico o previsible. Los standares permiten una amplia libertad a la
+hora de ordenar las operaciones.
+Un ejemplo problematico:
+
+  void CopySwap (Vect* a, Vect*b)
+  {
+    a->x = b->y;
+    a->y = b->x;
+  }
+
+  Si "a" y "b" apuntan a direcciones diferentes, nunca habra problema.
+  Si existe aliasing ("a" y "b" apuntan al mismo sitio") tenemos 2 situaciones:
+
+  Ejemplo A:
+
+  ldr r2,[r1,#4]  @ b.y
+  str r2,[r0]     @ a.x = b.y
+  ldr r2,[r1]     @ b.x
+  str r2,[r0,#4]  @ a.y = b.x
+
+  esta implementacion corromperia los datos. Cuando se lee b.x, el dato 
+  ya ha sido modificado por el "str r2,[r0]"
+  Sin embargo, esto es lo que expresa el codigo C, con lo que seria una implementacion 
+  correcta.
+
+  Ejemplo A:
+
+  ldr r2,[r1]     @ b.x
+  ldr r3,[r1,#4]  @ b.y
+  str r3,[r0]     @ a.x = b.y
+  str r2,[r0,#4]  @ a.y = b.x
+
+  esta implementacion funcionaria, es decir, haria el swap correctamente, y ademas
+  es ligeramente mas rapida. 
+  Pero en el codigo C hay un bug implicito con lo que el comportamiento seria diferente
+  al descrito.
+
+  En un caso normal el compilador generara codigo del ejemplo A.
+  Como en videojuegos es deseable la optimizacion, a veces se fuerza al compilador
+  (mediante un flag) a elegir una politica parecida al ejemplo B.
+  En ese caso el programa parece funcionar (aunque no deberia hacerlo), mientras
+  que la compilacion sin optimizar fallaria.
+
+* Strict aliasing.
+
+  Para evitar (en lo posible )situaciones como la anterior, el standar
+requiere que los compiladores sigan unas reglas respecto al aliasing.
+
+- En una funcion, si existen punteros del mismo tipo, se asume que podrian
+tener aliasing, y se genera codigo mas seguro (ejemplo A, que respeta el orden).
+
+- En una funcion, si existen punteros de diferente tipo se asume que nunca 
+van a apuntar al mismo dato/objeto. Esta regla se llama "strict aliasing".
+
+La regla tiene consecuencias en el nivel de optimizacion codigo compilado, por
+lo que ha menudo se permitir deshabilitar la regla con un flag.
+
+-fno-strict-alising
+
+Tambien se puede forzar el comportamiento estandar con (que es el default):
+
+-fstrict-alising
+
+
+* Problemas: velocidad
+
+  void AddToVectors (Vect* dst, Vect* adder, int nvec)
+  {
+    do {
+      dst->x += adder->x;
+      dst->y += adder->y;
+      dst++;
+      nvec--;
+    } while (nvec);
+  }
+
+Puesto que el compilador no sabe si "adder" es un dato incluido en el 
+array "dst", se ve obligado a leerlo constantemente:
+
+  loop:
+      ldr  r3,[r0]      @ dst->x
+      ldr  r4,[r0,#4]   @ dst->y
+      ldr  r5,[r1]      @ adder->x   esta lectura podria hacerse
+      ldr  r6,[r1,#4]   @ adder->y   antes del bucle
+      add  r3,r3,r5
+      add  r4,r4,r6
+      str  r3,[r0]
+      str  r4,[r0,#4]
+      add  r0,r0,#8
+
+      subs  r2,r2,#1
+      bne   loop
+
+* Keyword: restrict
+
+  El standar C99 añadio un keyword nuevo, "restrict" para aliviar los 
+  problemas de velocidad consecuencia de las reglas de aliasing.
+  Con "restrict" informamos al compilador que el puntero señalado es
+  unico en el contexto, que no existen alias en esa funcion o metodo.
+
+  void AddToVectors (restrict Vect* dst, restrict Vect* adder, int nvec)
+
+  De esta manera el compilador sabe que cada puntero estara en diferentes
+  partes de memoria, por lo que potencialmente puede optimizar mas el 
+  codigo eliminando lecturas innecesarias.
+
+  El keyword no esta disponible en C++, lo que limita mucho su uso; se
+  puede mezclar C y C++ en el mismo proyecto, pero el compromiso entre
+  legibilidad y optimizacion en este caso es pobre.
+
+
+
+* Recomendaciones.
+
+  Asumir la regla del strict aliasing en videojuegos es peligroso, ya que 
+  muchos equipos la desconectan a proposito.
+
+  - Realizar copias temporales explicitas cuando haya peligro
+   
+    int t = b.x
+    a.x = b.y;
+    a.y = b.x;
+
+  - Desensamblar inner loops para observar si se estan realizando lecturas
+    innecesarias. En caso afirmativo realizar copias locales manualmente:
+
+   void AddToVectors (Vect* dst, Vect* adder, int nvec)
+   {
+     int x = b->x;
+     int y = b->y;
+     do {
+       dst->x += x;
+       dst->y += y;
+       dst++;
+       nvec--;
+     } while (nvec);
+   }
+
+  - No asumir nunca que "el compilador lo hara bien". Los compiladores no saben
+    practicamente nada sobre el uso que se le da a las funciones. Ademas, los 
+    problemas de aliasing son una de las areas mas oscuras y problematicas en
+    el contexto de C/C++.
+
+  - Evitar los castings entre punteros de diferentes tipos; en caso de ser muy
+    deseable, tener en cuenta en los algoritmos las consecuencias del aliasing.
+    Se puede detectar el aliasing con defensas tipo "Assert(((void*)a)!=(void*)b)"
+
+  - Evitar los tipos generales y usar en su lugar clases y tipos especificos.
+    Por ej. usar un "t_mat3x3" es menos dado a disparar la regla del strict aliasing
+    que el tipo "float *"
+
+  - Plantearse el uso de "restrict" en funciones que contengan inner loops,
+    o sean usadas en inner loops.
+    En C++, "restrict" no esta standarizado. Cada compilador ofrece su propia forma
+    de "restric": por ej. __restrict o __restrict__
+
+
+
+

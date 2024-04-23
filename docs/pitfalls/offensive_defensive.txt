@@ -1,0 +1,68 @@
+
+
+Las posibles politicas para afrontar bugs en el codigo se pueden clasificar en dos grandes 
+categorias: ofensivas y defensivas
+ 
+ 
+  OFENSIVAS
+  ---------
+  
+  La idea de las politicas ofensivas es provocar una salida del programa en el momento en el que
+se produce el bug, de manera que los programadores puedan encontrarlo y arreglarlo bug lo antes 
+posible.
+
+  La herramienta principal es "assert". Assert es una macro en la que el programador incluye una
+condicion que el programa tiene que cumplir; en caso contrario se fuera la salida, imprimiendo
+la linea concreta por la terminal,
+
+  assert((d > 0.0f) && (d<MAX_LENGTH));
+  float step = distance / nsteps;
+  
+  "assert" solo tiene coste añadido cuando se compila en DEBUG. Al compilar en RELEASE, se
+añade una definicion al build como "NDEBUG" que define assert como espacio vacio.
+
+#ifdef NDEBUG
+#define assert
+#endif
+
+  De esta manera, en release todos los asserts desaparecen. Eso implica que no tienen coste,
+pero cualquier bug que aparezca en la version de release seguira su curso (corrupcion de datos,
+excepciones posteriores...).
+  Es importante darse cuenta de en que C/C++ es facil cometer errores que solo aparecen en release,
+por lo que es habitual tener "compiling profiles" intermedios entre debug y release. Por ej.:
+
+Debug:   gcc -O0 -g 
+Test:    gcc -O2 -g 
+Release: gcc -O2 -DNDEBUG
+
+  Otras tecnicas relacionadas son "test driven development" y "unit testing". La metodologia 
+comun implica escribir programas de pruebas, previamente a los modulos/clases deseadas. Una
+vez implementadas (modulo y prueba), se pasan las pruebas frecuentemente para asegurarse de que
+no se han añadido errores con cada iteracion de desarrollo.
+  
+  
+  DEFENSIVAS
+  ----------
+
+  En muchas situaciones, interesa que el programa siga funcionando incluso cuando se produce
+un error grave. Por ej:
+
+- En aplicaciones embedded, donde un crash puede parar una cadena de produccion o incluso poner
+en peligro vidas
+- En programas de prueba, para que el departamento de testeo pueda evaluar todas las partes del 
+programa aunque una o varias esten fallando gravemente
+
+
+  Para ellos se usan politicas defensivas de diferentes niveles de tolerancia, cuya funcion es
+permitir que el programa siga funcionando aunque sea con deficiencias. El sistema habitual es
+
+1.- Emitir un log de que se encontro un problema. Ej. "textura marble07.pvc not found"
+2.- Devolver un valor o generar unos datos que permitan seguir funcionando.
+    Ej.: devolver una textura default (de color llamativo) en lugar de marble07
+
+
+  La programacion defensiva tiene como contrapartida que dificulta la localizacion de bugs. En
+el ej. mencionado, podria costar averiguar porque no se pudo cargar "marble07.pvc" ya que 
+generalmente se percibe el problema bastante tarde.
+
+

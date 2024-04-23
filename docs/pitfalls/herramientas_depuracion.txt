@@ -1,0 +1,44 @@
+
+ Herramientas para verificacion dinamica de codigo
+ -------------------------------------------------
+
+- Valgrind
+  - Free: si
+  - Tipo: emulador, depura binarios
+  - Plataformas: linux x86, linux ARM, linux PowerPC, OSX x86, OSX PowerPC
+
+- Dr. Memory
+  - Free: si
+  - Instrumentacion de codigo en RT, depura binarios
+  - Plataformas: Windows x86, Linux x86, OSX x86, Android ARM, Linux ARM
+
+  
+- GNU C/CLANG/VS C compiler runtime checking con "sanitizer"
+  - Free: no
+  - Tipo: Instrumentacion de codigo al compilar
+  - Plataformas: x86, ARM...(todas?)
+  Se usa compilando y linkando con flags. Por ej. para CLANG:
+    como -fsanitize=address, -fsanitize=undefined o -fsanitize=memory  
+
+De interes menor, antiguamente populares:
+
+- Application verifier
+  - Free: si
+  - Tipo: Librerias standard modificadas
+  - Plataformas: Windows x86
+
+- Purify 
+  - Free: no
+  - Tipo: Instrumentacion de codigo durante el linkado
+  - Plataformas: Windows x86, Linux x86, AIX Power 
+
+
+ Herramientas para verificacion estatica de codigo
+ -------------------------------------------------
+
+ - cppcheck
+
+ - Splint  (solo C)
+ 
+ - Frama C (solo C)
+ 

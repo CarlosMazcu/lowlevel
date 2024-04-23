@@ -62,19 +62,27 @@ UpdateSnake:
     ldr  r10,[r1,#8]            @ int speed_x = snake->speed_x;
     ldr  r11,[r1,#12]           @ int speed_y = snake->speed_y;
 
-@@  if (keypad != 0) {
-@@    speed_x = speed_y = 0;
-@@    if (keypad & 1)
-@@      speed_x = 1;
-@@    if (keypad & 2)
-@@      speed_x = -1;
-@@    if (keypad & 4)
-@@      speed_y = -1;
-@@    if (keypad & 8)
-@@      speed_y = 1;
-@@      snake->speed_x = speed_x;
-@@      snake->speed_y = speed_y;
-@@    }
+    cmp r0,#0                   @  if (keypad != 0) {
+    beq not_keypad
+    mov r10,#0                  @ speed_x = 0
+    mov r11,#0                  @ speed_y = 0
+
+    ands r6,r0,#1               @ if (keypad & 1)
+    movne r10,#1               @ speed_x = 1;
+
+    ands r6,r0,#2               @ if (keypad & 2)
+    movne r10,#-1                @ speed_x = -1;                      
+              
+    ands r6,r0,#4               @ if (keypad & 4)
+    movne r11,#-1               @ speed_y = -1;            
+
+    ands r6,r0,#8               @ if (keypad & 8)
+    movne r11,#1                @ speed_y = 1;              
+
+    str  r10,[r1,#8]            @ snake->speed_x = speed_x;
+    str  r11,[r1,#12]           @ snake->speed_y = speed_y;
+
+not_keypad:
 
     add r8,r8,r10               @  new_x += speed_x;
     add r9,r9,r11               @  new_y += speed_y;

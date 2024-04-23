@@ -1,0 +1,164 @@
+
+01234567890123456789012345678901234567890123456789012345678901234567890123456789
+
+Los tipos basicos de C no tienen una definicion unica; el standar permite que 
+cada compilador/OS defina los tipos dentro unos limites.
+
+Esto se debe a que hasta los anyos 80 las CPUs no habian estandarizado los
+tipos numericos. Algunas tenian bytes de 9 bits, o no soportaban directamente
+los bytes con signo, o solo llegaban a tipos de longitud de 16 bits.
+
+A finales de los 80, las CPUs convergen hasta soportar los mismos tipos basicos
+de 8, 16 y 32 bits. Sin embargo el comite de standard C decidio seguir dando 
+ciertas libertades a la hora de definir los tipos.
+
+Esto puede causar problemas de compatibilidad al portar el codigo de una 
+plataforma a otra (ej. OSX 64 bits -> Android).
+
+En general la configuracion de los tipos se especifica a partir del target OS.
+Sin embargo los compiladores no estan obligados a seguir las directivas del OS y
+puede ocurrir que su configuracion tenga diferencias.
+
+Para aliviar el problema existen cabeceras con tipos predefinidos cuyo tipo
+esta esta libre de ambiguedades. Por ej., Nintendo usa tipos como s8,u8,s16,u16,
+s32,u32.
+
+Existe un standard al respecto (C99). Se incluye con #include <stdint.h>
+La desventaja de usar estos tipos es que al portar el codigo entre plataformas
+el include puede faltar, ya que no todos los compiladores cumplen el standard C99. 
+
+Los problemas se puede clasiciar en dos tipo:
+
+Problemas de signo
+-------------------
+
+Se limitan al tipo "char".
+El tipo char puede ser signed o unsigned, siendo signed el mas habitual.
+
+El error mas habitual se produce al usar un tipo char como indice:
+
+int read_data (char idx)
+{
+    return tabla[idx];
+}
+
+Este codigo, que seria correcto en una plataforma con unsigned char, fallaria
+al compilar y ejecutarse en otra con signed char.
+Dado el valor 128, la plataforma unsigned leeria el valor num. 128 de la tabla.
+Pero en una plataforma signed, leeria el valor "-1", justo el byte previo al 
+puntero (fuera de la memoria reservada por el programa).
+
+La mejor manera de evitar estos problemas es especificar siempre el tipo al 
+usar char, ya sea explicitamente:
+
+signed char var;
+
+o por medio de tipos predefinidos:
+
+typedef signed char s8; // Tipico de Nintendo por ej.
+
+s8 var;
+
+Algunos ejemplos de plataformas con char "signed": iOS, Linux x86
+Algunos ejemplos de plataformas con char "unsigned": android, Linux ARM
+
+Problemas de longitud
+---------------------
+
+* Los tipos "char" y "short" tienen siempre tamaños fijos: 8 y 16 bits.
+En arquitecturas antiguas char podia tener otros tamaños como 9 o 7. Este 
+tipo de rarezas puede ser obviada con seguridad.
+
+* Los tipos float y double tambien tienen tamaños fijos por estar 
+standarizados (IEEE-754).
+
+* Tipos "long" y "int".
+En plataformas antiguas "int" podia ser de 16 bits (MS-DOS, AmigaOS, PalmOS).
+Sin uno no se dedica al retrocomputing, esa comfiguracion puede ser descartada.
+
+El problema en la actualidad viene de los nuevos OSes y CPUs de 64 bits. 
+El comite de standarizacion ha decidido dejar libertad para usar varios modelos
+de tamaño en "int" y "long".
+
+ Sizeof(int)   sizeof (long)   Platform
+----------------------------------------
+       4           4           Linux comun 32 bits, Win32, OSX 32 bits
+       4           8           Linux comun 64, Win64, OSX 64 bits
+       8           8           Linux (Cray) y otras rarezas
+
+NOTA: Se pueden ejecutar programas para Win32 en Win64; es normal que un 
+compilador este configurado por defecto para este sistema. Idem para OSX.
+
+Como se puede observar en la tabla, el problema puede surgir al portar codigo
+de 32 bits a una plataforma de 64 bits. Concretamente con el tipo "long", que
+dobla tamaño. Por tanto, cuidado con el uso de "long".
+
+* Tipo "long long". Hasta el momento se puede esperar que este tipo tenga 
+64 bits en todas las plataformas.
+
+* Tipos enumerados. 
+
+typedef enum
+{
+ AGENT_SOLDIER = 200,
+ AGENT_DOG
+} TAgents;
+
+Este tipo puede ser en realidad de 8 o 32 bits, dependiendo del
+compilador y OS. No solo eso, si la enumeracion es superior a 255:
+
+typedef enum
+{
+ AGENT_SOLDIER = 1000,
+ AGENT_DOG
+} TAgents;
+
+...el tipo seria seguramente de 32 bits en el mismo compilador.
+Una estructura o array que incluya tipos enumerados va a tener diferentes
+tamaños segun la plataforma donde se compile. Por ello a veces es mejor
+huir de los tipos enumerados y usar "enums" simples sobre campos de tamaño
+preestablecido.
+
+enum
+{
+ AGENT_SOLDIER = 200,
+ AGENT_DOG
+};
+
+unsigned char agents [20]; // Use Agents enum
+
+Otra posibilidad es usar enumeraciones de C++11, que admiten un tipo explicito:
+
+enum kTest : unsigned char
+{
+    Val1,
+    Val2
+};
+
+* Tipo bool
+
+El tipo de C++/C99 "bool" puede ser de 8 o 32 bits, de nuevo depende de plataforma
+y compilador.
+Es habitual usar "int" en lugar de "bool" para asegurar una buena calidad de
+codigo maquina en CPUs modernas.
+Las advertencias del apartado "Tipos enumerados" se aplican aqui. Hay que
+tener cuidado en cuestiones de portabilidad y velocidad.
+
+
+* Casos donde conviene evitar estos tipos:
+
+- Datos que se van guardar en disco o enviar por red, y que podrian ser
+leidos en una plataforma diferente a la de origen.
+- Donde se quiera ahorrar memoria por temas de eficiencia.
+
+
+* Recomendaciones generales
+
+- Usar "char" siempre con el keyword signed o unsigned
+- Asumir "short" como 16 bits, "int" como 32.
+- No usar enum o bool en estructuras o miembros de clase que se vayan a serializar
+- En C++ (del 11 en adelante) es posible usar "enum class" para fijar el tamaño del enum
+- Plantearse el uso de tipos prefedinidos (como los de stdint.h) en proyectos multiplataforma
+
+
+

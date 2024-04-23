@@ -1,0 +1,48 @@
+0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+
+ GCC, flags importantes
+ -----------------------
+
+
+* -O0 -> compilar sin optimizacion:
+         - Todas las variables se reflejan en pila
+         - Todas la expresiones matematicas se ejecutan
+         - El orden de ejecucion se respeta (izq. a derecha)
+         - No se inlinea ninguna funcion
+
+* -O1 -> compilar optimizado
+         - Las variables locales se mapean a registro (lo maximo posible)
+         - Las expresiones matematicas se simplifican todo lo posible
+         - Se inlinean muchas funciones
+         - Generalmente los debuggers ya no pueden trabajar bien
+
+* -O2 -> compilar muy optimizado, setting tipico de "release"; idem a O1 mas:
+         - Se intenta reordenar inst. para acomodarse a las CPUs
+         - El orden de ejcucion no tiene porque respetarse; se prioriza ramas rapidas en if's
+         - Se inlinea todo lo posible
+         - Los debuggers apenas pueden trabajar
+   
+* -g  -> incluir simbolos de debug, necesario para los debuggers
+
+
+
+
+ Desensamblar
+ ------------
+
+Se puede ver el codigo que genera el compilador de tres maneras:
+
+- Usando un debugger y un breakpoint + activar la ventana de ensamblador o la vista mixta
+
+- Usando la linea de comandos, "objdump -d mi_modulo.o"
+  Cuidado cuando se usen compiladores cruzados, generalmente habra que invocar a su propio objdump 
+  (por ejemplo arm-eabi-elf-none-objdump)
+  
+- Usando una herramienta especifica para el hackeo como IRA
+
+
+Si la funcion que te interesa no aparece, seguramente es porque ha sido inlineada
+
+Para ver el desensamblar de un funcion lo primero es asegurarse de que no sea "inlineada". Basta 
+con hacerla publica (comentar el "static").
+

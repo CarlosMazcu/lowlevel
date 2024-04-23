@@ -1,0 +1,54 @@
+
+Modos de fallo de una aplicacion C/C++/Asm
+------------------------------------------
+
+Nombre:   Freeze, hang, cuelgue.
+Motivos:   
+          - Fallo algoritmico (loop sin salida por ej.)
+          - Bucle infinito espureo por corrupcion de pila 
+          - Bucle infinito espureo por salto fuera del programa 
+          - Excepcion gestionada como bucle infinito (maquinas antiguas, embedded systems, amateur)
+          - Fallo en el kernel (provocado por la aplicacion y que acaba en las situacones anteriores) 
+          - Fallo de la CPU por inst. invalida (muy raro, solo CPUs antiguas)
+Metodos de investigacion:
+          - Interrupcion de la tarea con debuguer
+          - Busqueda dicotomica del error
+
+
+
+Nombre:   Crash, core dump
+Motivos:  
+          - Excepcion implementada como salida de programa
+          - Fallo en el kernel (provocado por la aplicacion) + reset 
+          - Excepcion implementada como reset (sis. antiguos, embedded systems)
+Metodos de investigacion:
+          - Examen de la pila tras el crash, con un debuguer
+          - Examen del core dump (en desaparicion)
+          - Verificacion con herramientas dinamicas tipo valgrind o Dr. memory
+          - Busqueda dicotomica del error
+
+
+
+Nombre:   Corrupcion del programa (screen corruption, data corruption)
+Motivos:  
+          - Datos de memoria sobreescritos (punteros dañados)
+Metodos de investigacion:
+          - Uso de "memory breakpoints" con debuguer
+          - Logs 
+          - Programacion defensiva, insercion de ASSERTs
+          - Verificacion con herramientas dinamicas tipo valgrind o Dr. memory
+
+
+ Lista de excepciones habituales:
+ --------------------------------
+
+- Div por 0, en integer o float
+- Operaciones float especificas (ej. sqrt de -1 si la maquina tiene inst. sqrt)
+- Lectura/escritura fuera de rango
+- Lectura/escritura desalineada (solo algunas CPUs)
+- Intento de escritura sobre el propio programa u otra area protegida
+- Operacion en coma flotante invalida (varias)
+- Instruccion codigo maquina invalida (desensamblada habitualmente como "illegal")
+- Instruccion de excepcion (ej. "trap")
+
+

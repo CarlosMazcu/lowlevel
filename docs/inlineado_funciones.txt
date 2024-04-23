@@ -1,0 +1,40 @@
+0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+
+La regla principal del inlining: 
+ Para que un compilador puedo hacer inline de una funcion, el codigo de dicha funcion tiene que 
+ estar presente en el propio .C/.CPP de la funcion que llama a la que deseamos inlinear.
+
+
+
+ Inlinear dentro de un .C/.CPP
+ -----------------------------
+
+- El codigo de la funcion debe estar encima, no debajo, de la funcion que la llama.
+  Una forward declaration NO sirve.
+
+  static inline int abs (int a)
+  {
+     return (a < 0) ? -a : a;
+  }
+  
+- Es importante que la funcion sea privada (STATIC), aunque el inlining puede llegar a funcion siendo 
+  publica
+- Se puede añadir INLINE, aunque el compilador lo ignorara
+
+
+ Inlinear codigo externo a un .C/.CPP
+ ------------------------------------
+
+- Para poder inlinear funciones externas, la unica manera es incluirlas por medio de un .h
+- La funcion DEBE ser privada, o apareceran errores de linkado por multiples instacias en los .o
+- Se puede añadir INLINE, aunque el compilador lo ignorara. Pero se puede  considerar obligatorio por 
+  una cuestion de estilo
+
+
+ Inline de metodos de clases en C++
+ ----------------------------------
+
+- Lo unico importante en este caso es el codigo sea incluido, asi que los metodos con su codigo completo
+deben estar presentes en los .h
+
+

@@ -1,0 +1,404 @@
+
+------------------------------------------------------------------------
+
+Ej:            ret/
+
+Desc.:         Omision de "return"
+
+Caracter:      Comportamiento indefinido
+Aparicion:     
+               - Por cambio de compilador
+               - Por cambio de settings de compilacion (O0,O2)
+               - Por cambio de plataforma
+
+Warnings:      A veces, en -O2
+
+Como evitarlo: Solo chequeo sistematico de las funciones
+               
+Como detectarlo: 
+               - Flags de warning (-Wall)
+               - Compilacion en O0 y O2
+               - Analizadores estaticos de codigo
+
+------------------------------------------------------------------------
+
+Ej:            init/
+
+Desc.:         Omision de inicializacion en variables locales
+
+Caracter:      Comportamiento indefinido
+Aparicion:     
+               - Por cambio de compilador
+               - Por cambio de settings de compilacion (O0,O2)
+               - Por cambio de plataforma
+               - Por cambios del algoritmo (aunque sean ligeros)
+
+Warnings:      A veces, en O2
+
+Como evitarlo: 
+               - Inicializar todas las variables sistematicamente
+               - Uso de la declaracion con calculo. Ej:
+
+                  int alive = agent[i].alive;
+
+               
+Como detectarlo: 
+               - Flags de warning (-Wall)
+               - Compilacion en O0 y O2
+               - Herramientas de test tipo Valgrind
+               - Analizadores estaticos de codigo
+
+------------------------------------------------------------------------
+
+Ej:            char* alive = (char*)malloc (1024):
+               ...
+               if (alive[i]) {
+               ...
+
+
+Desc.:         Omision de inicializacion de memoria
+               Ocurre tambien en C++ con "new"
+
+Caracter:      Comportamiento indefinido
+Aparicion:     
+               - Por cambios de tamaño o orden en las reservas durante el desarrollo
+               - Por cambio de compilador
+               - Por cambio de plataforma
+               - Por cambios del algoritmo (aunque sean ligeros)
+
+Warnings:      No
+
+Como evitarlo: 
+               - Inicializar todos los buffers sistematicamente
+               
+Como detectarlo: 
+               - Herramientas de test tipo Valgrind, compilando en O0 y O2
+               - Analizadores estaticos de codigo
+
+------------------------------------------------------------------------
+
+Ej:            //1 
+               pos_t* positions = (post_t*)malloc (100 * sizeof(pos_t)):
+               int enemies = 10;
+               ...
+               for (t=0; t<=100; t++) {
+                 positions[i].x  = rand() % 5000;
+                 positions[i].y  = rand() % 5000;
+               }
+
+               //2
+               free (positions);
+               ...
+               positions[i].x = ;
+               
+
+Desc.:         Atropello de memoria
+               Ocurre cuando se escriben valores fuera del buffer disponible
+
+               En el ej. 1 se escribe en la posicion 100 del buffer, que
+               solo llega a 99. La variable "enemies" podria corromperse
+
+               En el ej. 2 se escribe usando un puntero que fue liberado previamente;
+               la memoria implicada puede estar siendo usada por un malloc posterior
+
+               ATENCION: este es el tipo de bug mas peligroso en programacion
+
+Caracter:      Comportamiento indefinido
+Aparicion:     
+               - Por cambio de settings de compilacion (O0,O2)
+               - Por cambios de tamaño o orden en las reservas durante el desarrollo
+               - Por cambio de compilador
+               - Por cambio de plataforma
+               - Por cambios del algoritmo (aunque sean ligeros)
+
+Warnings:      No
+
+Como evitarlo: 
+               - Borrar el puntero despues de un free. Esto hace los posibles bugs
+                 mas deterministas
+
+                 free (positions); positions = 0;
+
+               - En escrituras random sospechosas se puede usar assert
+                 
+                 assert((i>=0) && (i<100));
+                 positions[i].x = ....
+               
+Como detectarlo: 
+               - Herramientas de test tipo Valgrind, compilando en O0 y O2
+               - Analizadores estaticos de codigo (poco efectivo)
+
+------------------------------------------------------------------------
+
+Ej:            //1 
+               pos_t* positions = (post_t*)malloc (100 * sizeof(pos_t)):
+               int enemies = 10;
+               ...
+               for (t=0; t<=100; t++) {
+                 x = positions[i].x; 
+                 y = positions[i].y;
+                 ...
+               }
+
+               //2
+               free (positions);
+               ...
+               x = positions[i].x;
+
+               //3
+               int i;
+               ...
+               x = positions[i].x; 
+               y = positions[i].y;
+               
+
+Desc.:         Lecturas fuera de rango
+               Ocurre cuando se leen valores fuera del buffer disponible
+
+               En el ej. 1 se lee en la posicion 100 del buffer, que
+               solo llega a 99. El dato podria ser realmente "enemies"
+
+               En el ej. 2 se lee usando un puntero que fue liberado previamente;
+               la memoria implicada puede contener cualquier cosa (o los valores
+               previos al free)
+
+               En el ej. 3 se lee usando un indice no inicializado que contendra
+               un valor impredecible. En ese caso se puede intertar lee cualquier
+               parte de la memoria.
+
+               ATENCION: este es uno de los bugs mas peligrosos y dificiles de arreglar
+
+Caracter:      Comportamiento indefinido
+Aparicion:     
+               - Por cambio de settings de compilacion (O0,O2)
+               - Por cambios de tamaño o orden en las reservas durante el desarrollo
+               - Por cambio de compilador
+               - Por cambio de plataforma
+               - Por cambios del algoritmo (aunque sean ligeros)
+
+Warnings:      No
+
+Como evitarlo: 
+               - Borrar el puntero despues de un free. Esto hace los posibles bugs
+                 mas deterministas
+
+                 free (positions); positions = 0;
+
+               - En lecturas random sospechosas se puede usar assert
+                 
+                 assert((i>=0) && (i<100));
+                 x = positions[i].x
+               
+Como detectarlo: 
+               - Herramientas de test tipo Valgrind, compilando en O0 y O2
+               - Analizadores estaticos de codigo (poco efectivo)
+
+------------------------------------------------------------------------
+
+Ej:            //1 
+               void function_hash (int arg)
+               {
+                 int abusive_array[10000];
+                 ...
+                 abusive_array [i] = x;
+               }
+
+
+               //2
+               int function_hash (int len)
+               {
+                 int abusive_array[len];
+                 ...
+                 abusive_array [i] = x;
+               }
+               
+
+Desc.:         Abuso del stack
+               Ocurre cuando se usa el stack para reservas de memoria en 
+               lugar de usar malloc o arrays estaticos.
+               La longitud del stack no esta standarizada. Tampoco el comportamiento
+               del programa al escribir por debajo de su limite 
+
+               El ej. 2 no es C standard, pero compiladores como GCC lo 
+               aceptan como extension del lenguaje.
+
+               ATENCION: este bug crea problemas frecuentes de portabildiad
+
+Caracter:      Comportamiento indefinido
+Aparicion:     
+               - Por cambio de plataforma
+               - Por cambios del algoritmo (aunque sean ligeros)
+
+Warnings:      No
+
+Como evitarlo: 
+               No usar nunca la pila para almacenar arrays de trabajo o 
+               estructuras/objetos (C++) grandes.
+               La pila esta pensada para almacenar cientos de bytes, no 
+               miles
+               En caso de duda, usar malloc/free
+               
+Como detectarlo: 
+               Practicamente indetectable. Los debuguers pueden mostrar
+               a veces el problema al dar una excepcion de memoria
+
+
+------------------------------------------------------------------------
+
+Ej:            // 1
+               ThisFunc (moduleA_init(), moduleB_init(), init_var);
+
+               // 2
+               if (module_init() && (module_var > 1))
+
+Desc.:         Orden de ejecucion critico
+               El orden de ejecion de las funciones que se usan como argumento
+               tienden a cambiar segun el compilador, standard elegido, nivel
+               de optimizacion etc...
+               Si el orden de ejecucion de estas funciones es critico (moduleA
+               antes de moduleB etc) los ejemplos fallaran en muchos casos
+               
+Caracter:      Comportamiento indefinido
+Aparicion:     
+               - Por cambio de settings de compilacion (O0,O2)
+               - Por cambio de compilador
+               - Por cambio de plataforma
+
+Warnings:      Raramente
+
+Como evitarlo: 
+               - No poner en la misma expresion diversas funciones esperando que la
+                 ejecucion se realizara por orden.
+
+                  int a  = moduleA_init()   // Correc. ej 1
+                  int b = moduleB_init()
+                  ThisFunc (a, b, init_var);
+
+               - No poner en la misma expresion funciones y variables que dependan
+                 de dicha funcion
+
+                 if (module_init())         // Correc. ej 2
+                   if (module_var > 1)
+   
+Como detectarlo: 
+               - Flags de warning (-Wall)
+               - Compilacion en O0 y O2
+               - Analizadores estaticos de codigo
+
+------------------------------------------------------------------------
+
+Ej:            int z = 0;
+               ...
+               xp = x / z; 
+
+Desc.:         Division por 0, en int o float/double
+               El comportamiento de un programa al dividir por 0 no esta
+               claramente definido por el standard, por lo que el programa
+               puede salir o continuar dependiendo de la plataforma.
+
+Caracter:      Comportamiento indefinido
+Aparicion:     
+               - Por cambio de compilador
+               - Por cambio de plataforma
+
+Warnings:      Solo si se divide muy explicitamente por 0 
+                 int m = 0;
+                 ...
+                 xp = x / m;
+
+Como evitarlo: Solo chequeo sistematico de los algoritmos que dividen
+   
+Como detectarlo:
+               - Uso de assert antes de cada division peligrosa 
+               - Herramientas de test tipo Valgrind
+               - Analizadores estaticos de codigo
+
+
+------------------------------------------------------------------------
+
+Ej:
+               ThisFunc (int a, unsigned int b)
+               {
+                  ...
+                  if (a > b)
+                     ...
+               }
+
+
+
+Desc.:         Comparacion de signed/unsigned
+               Las CPUs no saben comparar numeros signed/unsigned
+               Aunque la suma y la resta son mecanicamente iguales en ambos casos,
+               la comparacion no lo es. El valor signed sera considerado "unsigned".
+               Asi, -1 se toma como el numero unsigned 0xffffffff (4294967295)
+               
+Caracter:      Comportamiento determinista
+Aparicion:     
+               - Por aparicion de valores negativos o cercanos al limite numerico 
+
+
+Warnings:      Normalmente si, con el nivel de warning al maximo
+
+Como evitarlo: 
+               - Evitar la situacion; normalmente es facil
+
+               - Poner castings explicitos, asi al menos el programador que consulte
+                 el codigo posteriormente sera consciente del problema potencial
+   
+                   if (((unsigned)a) > b)
+   
+Como detectarlo: 
+               - Flags de warning (-Wall)
+               - Analizadores estaticos de codigo
+
+------------------------------------------------------------------------
+
+Ej:            if ( x = y + 5) { ...
+
+               a == b + 1;
+
+Desc.:         Confusion entre asignacion y comparacion
+               Las expresiones del ej. son legales en C, y tienen un
+               resultado numerico o booleano. 
+
+Caracter:      Comportamiento determinista
+Aparicion:     
+               - Siempre, pero a menudo solo se delata en condiciones
+                 puntuales.
+
+Warnings:      A veces, en O2
+
+Como evitarlo: Solo chequeo sistematico del caracter "="
+   
+Como detectarlo: 
+               - Flags de warning (-Wall)
+               - Compilacion en O0 y O2
+               - Analizadores estaticos de codigo
+
+
+------------------------------------------------------------------------
+
+Ej:            if ( x | y) { ...
+
+              if ( x && mask) { ...
+
+               a == b || enable_bits;
+
+Desc.:         Confusion entre OR logico y OR binario
+               Confusion entre AND logico y AND binario
+               En ocasiones la confusion puede tener el mismo resultado
+               algoritmico
+
+Caracter:      Comportamiento determinista
+Aparicion:     
+               - Siempre, pero a menudo solo se delata en condiciones
+                 puntuales.
+
+Warnings:      Raramente
+
+Como evitarlo: Solo chequeo sistematico de los caracteres "|" y "&"
+   
+Como detectarlo: 
+               - Flags de warning (-Wall)
+               - Compilacion en O0 y O2
+               - Analizadores estaticos de codigo

@@ -1,0 +1,162 @@
+
+01234567890123456789012345678901234567890123456789012345678901234567890123456789
+
+ALIGNMENT & PADING
+------------------
+
+* Concepto
+
+El "padding" en C/C++ se refiere a bytes de relleno que se utilizan en 
+diferentes ocasiones, con el fin de cuadrar datos en posiciones concretas.
+
+Por ejemplo:
+
+static char data[3];
+static int  this_var;
+
+En muchas plataformas, el compilador colocara un byte extra entre data y this_var.
+
+La razon habitual del padding es forzar los datos a estar "alineados" (aligned) 
+en memoria. La razon es que las CPUs tienen dificultades para leer datos desalinados.
+
+Alineamientos recomendados habitualmente:
+
+- Char:         aligned to 1, es decir, no es necesario alinear.
+- Short:        aligned to 2, simplemente necesita estar en posiciones de memoria pares.
+- Int:          aligned to 4, su posicion en memoria deberia ser un multiplo de 4
+- Long 64 bits: aligned to 8, su posicion en memoria deberia ser un multiplo de 8
+- Double:       aligned to 4, aunque funciona mejor alineado a 8
+- Vector:       aligned to 16 or 32.
+
+..los punteros de 32 y 64 bits siguen las mismas normas que int y long int de 64 bits.
+
+En la mayor parte de las plataformas, el compilador alinea automaticamentes datos 
+y estructuras (y clases).
+
+ - Ej. de datos: el ej. anterior
+ - Ej. de estructuras.
+
+    typedef struct
+    {
+      char  a_bool;
+      int an_index;
+      short an_array[3];
+    } padding_test;
+
+    en realidad, esta estructura se usa internamente asi:
+
+    typedef struct
+    {
+      char  a_bool;
+      char  PADDING[3]; // Pad to 4, to fit an int
+      int an_index;
+      short an_array[3];
+      short MORE_PADDING; // Pad 2 bytes more, so the sizeof() is multiple of 4
+    } padding_test;
+
+    Estructuras y clases se paddean o redondean hasta alcanzar un tamaño 
+    multiplo de 4, por un standard de facto.
+
+* Otros alineamientos.
+
+ - Se acepta/supone que los malloc's devuelven direcciones multiplos de 4,
+   de manera que int's y estructuras se pueden colocar dentro alineadas.
+   En los sistema de 64 bits malloc alinea a 16, apt hasta vectores de 128 bits.
+   
+ - Se acepta/supone que las variables de modulo y arrays se situan alineadas
+   con padding entre ellas (1er ej. de este texto).
+
+* Problemas relacionados con alineamiento.
+
+ - Desacople leer/escribir datos en multiplataforma
+ - Alineados: malgasto de memoria
+ - Desalineados: crash
+ - Desalineados: lentitud
+ - Desalineados: corrupcion
+
+* Plataformas sin alineamiento.
+
+  Por razones de memoria, algunos OSes recomendaron no usar padding. En ese
+caso el compilador no usara padding, aunque puede haber excepciones.
+Ejemplos famosos: Symbian, Nintendo GBA.
+
+* Pragma pack, otros
+
+  Algunos compiladores incluyen directivas o flags de compilacion que permiten
+desactivar el padding, con lo que  muchas estructuras quedan mas pequeñas o compactas.
+  La mas conocida es la directiva "pragma pack", habitual en VS. Estos pragmas o
+flags no son portables, solo funcionan en un compilador determinado.
+  Estas opciones del compilador NO garantizan que la CPU sea capaz de trabajar con datos
+desalineados, o que sea eficiente en caso de poder. 
+
+El uso de estas directivas se DESACONSEJA.
+
+
+* Como chequear padding
+ 
+  - Sizeof. El keyword "sizeof" delatara inmediatamente cualquier padding presente.
+
+    typedef struct { short x,y,z; } terna;
+    
+    Sizeof(terna) daria 8 si la plataforma tiene padding, o 6 si no.
+
+  - Resta de punteros (char*)
+
+    terna array[10];
+
+    char* a = (char*)&terna[0];
+    char* b = (char*)&terna[1];
+
+    la resta "b - a" dara cuantos bytes ocupa realmente una estructura "terna"
+  
+* Como comprobar el alineamiento de un puntero
+  - Visualmente: printf ("%x\n", ptr);
+  - Numericamente:
+    1.- Acceder al puntero como entero, por medio de union o casting.
+
+        unsigned long addr = *(unsigned long*)&pointer;
+
+        o
+
+        union { 
+          unsigned long bits;
+          void*         ptr;  
+        } bridge;
+
+        bridge.ptr = ptr;
+        
+        unsigned long addr = bridge.bits;
+
+    2.- Usar % o &
+
+        if ((addr % 4) == 0) 
+          printf ("Aligned to 4\n"));
+
+        if ((addr & 3) == 0) 
+          printf ("Aligned to 4\n"));
+ 
+* Recomendaciones
+
+  - Los alineamientos y redondeos (paddings) SON deseables. No luchar contra ellos
+  - Para ahorrar memoria, ordenar los miembros de estructuras/clases. De tipos de mayor
+    tamaño (double, long, float, int) a menor (char).
+  - Evitar el uso castings  a posiciones de memoria calculadas manualmente
+  - Evitar el uso de herramientas como "pragma pack"
+  - En pequeños proyectos que se deseen portar, se puede redondear las estructuras 
+    criticas manualmente y asi se evitan problemas en plataformas sin padding
+
+    typedef struct
+    {
+      int x, y, z;
+      char alive;
+    };
+
+    pasaria a:
+
+    typedef struct
+    {
+      int x, y, z;
+      int alive;
+    };
+
+
