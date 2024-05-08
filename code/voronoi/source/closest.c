@@ -19,3 +19,4 @@ int Closest (const TPoint* points_array, int npoints, int x, int y)
   }
   return closest;
 }
+

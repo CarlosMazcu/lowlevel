@@ -33,7 +33,7 @@ static const unsigned short _points_colors [] =
 
 
 // Fill the screen with closest points to each pixel
-#if 0
+#if 1
 void Voronoi (unsigned short* screen, const TPoint* points, int npoints, 
                const unsigned short* palette);
 #else
