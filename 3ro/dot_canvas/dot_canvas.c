@@ -44,41 +44,76 @@ static void FramerateLimit (int max_fps)
 // ---------------------------------------------------------------------------
 
 // Fully UNoptimized graphics effect example
-static int DoEffect (short* drawlist, int max_vertices, int w, int h, int frame, float projection)
-{
-  float anim1 = 0.003f * (float)frame;
-  float anim2 = 0.0015f * (float)frame;
-  short* ori = drawlist;
-  int i, j;
-  int cx = w >> 1;  // Screen center
-  int cy = h >> 1; 
-  int n_sec = 200;
-  int n_rad = 45;
-  for(j = 0; j < n_sec; j++) {
-    for(i = 0; i < n_rad; i++) {
-      const float r1 = 150.0f;
-      const float r2 = 350.0f;
-      float alpha = 2.0f * 3.1426f * ((float)j)/(float)n_sec;
-      float beta  = 2.0f * 3.1426f * ((float)i)/(float)n_rad;
-      float x = (r2 + r1 * cos(beta + anim1)) * cos(alpha + anim2);
-      float y = (r2 + r1 * cos(beta + anim1)) * sin(alpha + anim2);
-      float z = r1 * sin(beta + anim1);
-      z += 1000.0f;
-      int xp = cx + (int)((x * projection) / z);
-      int yp = cy - (int)((y * projection) / z);  
-      if ((xp >= 0) && (yp >= 0) && (xp < w) && (yp < h)) {
-        drawlist[0] = xp;
-        drawlist[1] = yp;
-        drawlist[2] = (i + (j<<2)) & 0xff;
-        drawlist += 3;
-      }
-    } 
-  }
+/*static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, float projection) {
+    short* ori = drawlist;  // Apuntador inicial del array de puntos
+    int grid_size = 64;     // Tamaño de la cuadrícula (64x64)
+    float spacing = 10.0f;  // Distancia entre puntos en la cuadrícula
 
-  // Devuelve el numero de vertices que se han metido en la lista de pintado
-  // No es necesario hacerlo con resta de punteros, solo importa devolver el numero correcto
-  return (drawlist - ori) / 3;
+    // Desplazamiento para centrar la cuadrícula en la pantalla
+    int offset_x = (w - (grid_size * spacing)) / 2;
+    int offset_y = (h - (grid_size * spacing)) / 2;
+
+    // Iterar sobre la cuadrícula (64x64 puntos)
+    for (int z = 0; z < grid_size; z++) {
+        for (int x = 0; x < grid_size; x++) {
+            // Coordenadas 2D del punto en la cuadrícula
+            float px = offset_x + x * spacing; // Posición X en pantalla
+            float py = offset_y + z * spacing; // Posición Y en pantalla
+
+            // Asegurar que el punto está dentro de los límites de la pantalla
+            if (px >= 0 && py >= 0 && px < w && py < h) {
+                drawlist[0] = (short)px;     // Coordenada X
+                drawlist[1] = (short)py;     // Coordenada Y
+                drawlist[2] = 128;           // Color del punto (índice de paleta)
+                drawlist += 3;               // Avanzar al siguiente punto
+            }
+        }
+    }
+
+    // Número total de vértices generados
+    return (drawlist - ori) / 3;
+}*/
+
+SDL_Surface* heightmap = NULL;
+
+static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, float projection) {
+    short* ori = drawlist;  // Apuntador inicial del array de puntos
+    int grid_size = 64;     // Tamaño de la cuadrícula (64x64)
+    float spacing = 10.0f;  // Distancia entre puntos en la cuadrícula
+    float z_offset = 700.0f;  // Desplazamiento en profundidad para la proyección
+    float height_offset = 100.0f; // Desplazamiento en altura (vista inclinada)
+    int cx = w >> 1;        // Centro de la pantalla en X
+    int cy = h >> 1;        // Centro de la pantalla en Y
+
+    // Iterar sobre la cuadrícula (64x64 puntos)
+    for (int z = 0; z < grid_size; z++) {
+        for (int x = 0; x < grid_size; x++) {
+            // Coordenadas 3D de la cuadrícula
+            float fx = (x - (grid_size / 2)) * spacing; // Coordenada X centrada
+            float fz = (z - (grid_size / 2)) * spacing; // Coordenada Z centrada
+            float fy = 0.0f;                            // Coordenada Y (altura del terreno)
+
+            // Aplicar un offset para simular una vista desde arriba
+            fy -= height_offset;
+
+            // Proyección en perspectiva
+            float px = cx + (fx * projection) / (z_offset + fz);
+            float py = cy - (fy * projection) / (z_offset + fz);
+
+            // Asegurar que el punto está dentro de los límites de la pantalla
+            if (px >= 0 && py >= 0 && px < w && py < h) {
+                drawlist[0] = (short)px;     // Coordenada X proyectada
+                drawlist[1] = (short)py;     // Coordenada Y proyectada
+                drawlist[2] = 255;           // Color del punto (índice de paleta)
+                drawlist += 3;               // Avanzar al siguiente punto
+            }
+        }
+    }
+
+    // Número total de vértices generados
+    return (drawlist - ori) / 3;
 }
+
 
 // ---------------------------------------------------------------------------
 
@@ -148,7 +183,7 @@ int main ( int argc, char** argv)
     ChronoWatchReset();
     int n_draw = DoEffect (drawlist, n_vertices, g_SDLSrf->w, g_SDLSrf->h, dump, projection);
     assert(n_draw <= n_vertices);
-    ChronoShow ( "Donut festival", n_draw);
+    ChronoShow ( "Landscape Loco Festival", n_draw);
 
     // Draw vertices; don't modify this section
     // Lock screen to get access to the memory array
