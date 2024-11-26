@@ -79,11 +79,11 @@ static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, 
     short* ori = drawlist;  // Apuntador inicial del array de puntos
     int grid_size = 64;     // Tamaño de la cuadrícula (64x64)
     float spacing = 10.0f;  // Distancia entre puntos en la cuadrícula
-    float z_offset = 700.0f;  // Desplazamiento en profundidad para la proyección
-    float height_offset = 100.0f; // Desplazamiento en altura (vista inclinada)
+    float z_offset = 500.0f;  // Desplazamiento en profundidad para la proyección
+    float height_offset = 200.0f; // Desplazamiento en altura (vista inclinada)
     int cx = w >> 1;        // Centro de la pantalla en X
     int cy = h >> 1;        // Centro de la pantalla en Y
-    float height_scale = 100.0f;
+    
     
     if (!heightmap || heightmap->format->BitsPerPixel != 8) {
         fprintf(stderr, "Heightmap no válido.\n");
@@ -96,8 +96,8 @@ static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, 
             int sample_x = (offset_x + x) % heightmap->w; // Coordenada X con desplazamiento
             int sample_y = (offset_y + z) % heightmap->h;
 
-            char* pixel = (char*)heightmap->pixels + (sample_y * heightmap->pitch) + sample_x;
-            float fy = (*pixel / 255.0f) * height_scale;
+            unsigned char* pixel = (unsigned char*)heightmap->pixels + (sample_y * heightmap->pitch) + sample_x;
+            float fy = (*pixel);
             fy -= height_offset;
 
             // Coordenadas 3D de la cuadrícula
@@ -153,8 +153,8 @@ int main ( int argc, char** argv)
   int req_h = 768; 
 
   /////////
-  static int offset_x_ = 0; // Offset inicial en X
-  static int offset_y_ = 0; // Offset inicial en Y
+  static int offset_x_ = 10; // Offset inicial en X
+  static int offset_y_ = 10; // Offset inicial en Y
   static int speed_x = 1;  // Velocidad en X
   static int speed_y = 1;  // Velocidad en Y
   ////////
@@ -190,7 +190,7 @@ int main ( int argc, char** argv)
   float half_scr_w = (float)(req_w >> 1);
   float projection = (1.0f / tan ( hfov * 0.5f)) * half_scr_w;
 /////////////
-   SDL_Surface* heightmap = SDL_LoadBMP("img/heightmap_24bits.bmp");
+   SDL_Surface* heightmap = SDL_LoadBMP("img/heightmap2_24bits.bmp");
     if (!heightmap) {
         fprintf(stderr, "Error al cargar el heightmap: %s\n", SDL_GetError());
         return -1;
@@ -209,11 +209,17 @@ int main ( int argc, char** argv)
 
     SDL_Event event;
 ////////
-    offset_x_ += speed_x;
+
+ 
+//    diagonal
+ 
+   offset_x_ += speed_x;
     offset_y_ += speed_y;
-    // Asegurarnos de que el desplazamiento no se salga del heightmap
-    if (offset_x_ + 64 >= heightmap->w) offset_x_ = 0; // Reinicia al comienzo en X
-    if (offset_y_ + 64 >= heightmap->h) offset_y_ = 0; // Reinicia al comienzo en Y
+
+    if (offset_x_ + 80 >= heightmap->w || offset_x_ <= 4) speed_x *= -1; 
+    if (offset_y_ + 80 >= heightmap->h || offset_y_ <= 4) speed_y *= -1; 
+
+    //espiral
 ////////
     // Your gfx effect goes here
 
@@ -226,7 +232,7 @@ int main ( int argc, char** argv)
     // Lock screen to get access to the memory array
     SDL_LockSurface( g_SDLSrf);
 
-    // Clean the screen
+    // Clean the screenss
     SDL_FillRect(g_SDLSrf, NULL, SDL_MapRGB(g_SDLSrf->format, 0, 0, 0));
     ChronoShow ( "Clean", g_SDLSrf->w * g_SDLSrf->h);
 
