@@ -74,9 +74,8 @@ static void FramerateLimit (int max_fps)
     return (drawlist - ori) / 3;
 }*/
 
-SDL_Surface* heightmap = NULL;
 
-static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, float projection) {
+static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, float projection, SDL_Surface* heightmap, int offset_x, int offset_y) {
     short* ori = drawlist;  // Apuntador inicial del array de puntos
     int grid_size = 64;     // Tamaño de la cuadrícula (64x64)
     float spacing = 10.0f;  // Distancia entre puntos en la cuadrícula
@@ -84,17 +83,29 @@ static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, 
     float height_offset = 100.0f; // Desplazamiento en altura (vista inclinada)
     int cx = w >> 1;        // Centro de la pantalla en X
     int cy = h >> 1;        // Centro de la pantalla en Y
-
+    float height_scale = 100.0f;
+    
+    if (!heightmap || heightmap->format->BitsPerPixel != 8) {
+        fprintf(stderr, "Heightmap no válido.\n");
+        return 0;
+    }
     // Iterar sobre la cuadrícula (64x64 puntos)
     for (int z = 0; z < grid_size; z++) {
         for (int x = 0; x < grid_size; x++) {
+
+            int sample_x = (offset_x + x) % heightmap->w; // Coordenada X con desplazamiento
+            int sample_y = (offset_y + z) % heightmap->h;
+
+            char* pixel = (char*)heightmap->pixels + (sample_y * heightmap->pitch) + sample_x;
+            float fy = (*pixel / 255.0f) * height_scale;
+            fy -= height_offset;
+
             // Coordenadas 3D de la cuadrícula
             float fx = (x - (grid_size / 2)) * spacing; // Coordenada X centrada
             float fz = (z - (grid_size / 2)) * spacing; // Coordenada Z centrada
-            float fy = 0.0f;                            // Coordenada Y (altura del terreno)
+            //float fy = 0.0f;                            // Coordenada Y (altura del terreno)
 
             // Aplicar un offset para simular una vista desde arriba
-            fy -= height_offset;
 
             // Proyección en perspectiva
             float px = cx + (fx * projection) / (z_offset + fz);
@@ -141,6 +152,13 @@ int main ( int argc, char** argv)
   int req_w = 1024;
   int req_h = 768; 
 
+  /////////
+  static int offset_x_ = 0; // Offset inicial en X
+  static int offset_y_ = 0; // Offset inicial en Y
+  static int speed_x = 1;  // Velocidad en X
+  static int speed_y = 1;  // Velocidad en Y
+  ////////
+
   if ( argc < 2) { fprintf ( stderr, "I need the cpu speed in Mhz!\n"); exit(0);}
   cpu_mhz = atoi( argv[1]);
   assert(cpu_mhz > 0);
@@ -171,17 +189,36 @@ int main ( int argc, char** argv)
   float hfov = 60.0f * ((3.1416f * 2.0f) / 360.0f);  // Degrees to radians
   float half_scr_w = (float)(req_w >> 1);
   float projection = (1.0f / tan ( hfov * 0.5f)) * half_scr_w;
-
+/////////////
+   SDL_Surface* heightmap = SDL_LoadBMP("img/heightmap_24bits.bmp");
+    if (!heightmap) {
+        fprintf(stderr, "Error al cargar el heightmap: %s\n", SDL_GetError());
+        return -1;
+    }
+    
+    // Verificar formato del heightmap
+    if (heightmap->format->BitsPerPixel != 8) {
+        fprintf(stderr, "El heightmap debe ser en escala de grises (8 bits).\n");
+        SDL_FreeSurface(heightmap);
+        return -1;
+    }
+///////////////
   // Main loop
   g_SDLSrf = SDL_GetVideoSurface();
   while ( !end) { 
 
     SDL_Event event;
-
+////////
+    offset_x_ += speed_x;
+    offset_y_ += speed_y;
+    // Asegurarnos de que el desplazamiento no se salga del heightmap
+    if (offset_x_ + 64 >= heightmap->w) offset_x_ = 0; // Reinicia al comienzo en X
+    if (offset_y_ + 64 >= heightmap->h) offset_y_ = 0; // Reinicia al comienzo en Y
+////////
     // Your gfx effect goes here
 
     ChronoWatchReset();
-    int n_draw = DoEffect (drawlist, n_vertices, g_SDLSrf->w, g_SDLSrf->h, dump, projection);
+    int n_draw = DoEffect (drawlist, n_vertices, g_SDLSrf->w, g_SDLSrf->h, dump, projection, heightmap, offset_x_, offset_y_);
     assert(n_draw <= n_vertices);
     ChronoShow ( "Landscape Loco Festival", n_draw);
 
