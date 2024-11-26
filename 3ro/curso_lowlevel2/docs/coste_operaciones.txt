@@ -1,0 +1,109 @@
+
+
+Escala de costes operaciones asm tipicas (de mas rapidas a mas lentas)
+----------------------------------------------------------------------
+
+  Este resumen trata de explicar el coste de las operacion de un procesador actual en 
+lineas muy generales. Se puede aplicar a las principales familias de CPUs comerciales como 
+x86, ARM, MIPS, RISC-V o PowerPC.
+
+  Algunos micros especializados como GPUs, DSPs o las SPUs del Cell (PS3) difieren en aspectos 
+importantes pero en general la escala suele tener parecidos razonables. 
+El programador experto suele ojear los manuales de la CPU antes de acometer un proyecto 
+RT (real time) para ver las tablas de tiempos, y buscar posibles anomalias a tener en cuenta.
+
+Ordenadas de menor a mayo coste:
+
+* Maximas velocidad ( 1 o varias por ciclo)
+
+    - Operaciones basicas de enteros: sumas, restas, desplazamientos y rotaciones, 
+      operaciones logicas (and or xor not), comparaciones
+
+      ej: add, mov, sub, and, mvn...
+
+
+* Latencias de 2 a 5 ciclos, pequeños cuellos de botella
+
+    - Accesos a datos frecuentemente consultados (se alojan en la cache L1)
+      
+      ej: ldr, str...
+
+    - Lecturas/escrituras de datos leidos secuencialmente
+
+      ej: ldr r,[r],#4
+          strh r,[r],#-2
+
+    - Saltos no tomados o predichos correctamente
+
+      ej: bne, bgt, beq...
+
+    - Multiplicaciones de enteros
+
+      ej: mul, mla
+
+    - Sumas, restas, comparaciones, multiplicaciones en flotante
+
+      ej: fadds, faddd, fmuls, fmuld, fcmps...
+
+    - Conversiones float->double y viceversa
+
+      ej: fcvtsd, fcvtds
+
+
+* Operaciones que frecuentemente son costosas, de 5 a 50 ciclos
+
+    - Acceso a datos poco frecuentes (se alojan en la cache L2, si existe)
+    - Acceso a datos mal alineados (en CPUs complejas)
+    - Divisiones (enteras o flotantes)
+
+      ej: fdivs
+
+    - Raices cuadradas (enteras o flotantes)
+    - Conversiones int->float/double y viceversa
+
+       ej: fsito, fuito, ftosi, ftoui + inst. para trasladar dato a otro banco
+
+    - Saltos no predichos o predichos incorrectamente
+    - Saltos a subrutina (llamadas a funcion)
+    - Secuencia rapida de escritura / lectura: escribir un dato y leerlo inmediatamente
+      (conocido como el problema load-hit-store). Tambien afecta leer datos vecinos
+
+* Posibilidad de alta penalizacion: hasta cientos de ciclos
+ 
+    - Acceso a datos mal alineados (CPUs sencillas; puede provocar una excepcion)
+    - Accesos a datos raramente usados (lecturas o escrituras no secuenciales a la RAM principal)
+    - Obtener partes fraccionarias en flotante (floor, ceil)
+    - Funciones trascendentes (flotante): sin, cos, atan,  exp, log, etc...Muchas cpus no las 
+      implementan, y cuando lo hacen suelen ser muy lentas
+    - Coma flotante doble precision cuando la CPU ofrece mal soporte para ellas (ej. Cortex A8)
+    - Excepciones "toleradas". Acessos a areas de memoria ilegales (por ejemplo  direccion 0 o -1), 
+      divisiones por cero en entero o flotante, operaciones flotantes con nan o infinito. Si el
+      conjunto CPU/OS no corta la ejecucion del programa, y estas operaciones no provocan tampoco 
+      su fin, pueden lastrar la ejecucion con penalizaciones de miles de ciclos.
+
+
+NOTAS:
+
+    - Esto es una guia orientativa: ninguna CPU corresponde exactamente a esta tabla; todas las CPUs
+      tienen puntos debiles especialmente penalizados, y tambien puntos fuertes inesperados.
+
+    - Los accesos a datos en C/C++ se realizan por medio de punteros (data[], *data, data->field). Los 
+      usos de variables globales o estaticas tambien son a menudos accesos a memoria.
+
+    - Los saltos se refieren a ramificaciones del codigo (if, switch, for, while), llamadas a 
+      funcion, llamadas a funcion por medio de un puntero y "goto".
+
+    - Llamar a funcion y retornar es costoso en general (excepto las funciones inlineadas 
+      por el compilador). Una llamada consta de varias instrucciones, por lo que no se incluyen 
+      en la lista.
+
+    - Las operaciones matematicas complejas como atan, exponencial pueden ser inst. de la cpu o
+      funciones, dependiendo del procesador y compilador usado. Si se usan en inner loops criticos, 
+      deben ser examinadas y medidas. 
+
+    - New y delete son llamadas a funcion; como todas las llamadas a funcion cuyo codigo se 
+      desconoce, el coste solo se puede evaluar midiendolo.
+      
+
+
+

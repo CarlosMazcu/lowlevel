@@ -1,0 +1,54 @@
+
+ Desensamblar
+ ------------
+
+Para ver el desensamblaro de un funcion lo primero es asegurarse de que no sea "inlineada". Basta 
+con hacerla publica (comentar el "static").
+
+Luego se puede ver de dos maneras:
+- Usando un debugger y un breakpoint + activar la ventana de ensamblador o la mixta
+- Usando la linea de comandos, objdump -d mi_modulo.o
+
+
+ GCC
+ ---
+
+
+* -O0 -> compilar sin optimizacion:
+         - Todas las variables se reflejan en pila
+         - Todas la expresiones matematicas se ejecutan
+         - El orden de ejecucion se respeta (izq. a derecha)
+
+* -O1 -> compilar optimizado
+         - Las variables locales se mapean a registro (lo maximo posible)
+         - Las expresiones matematicas se simplifican todo lo posible
+         - Generalmente los debuggers ya no pueden trabajar bien
+
+* -O2 -> compilar muy optimizado, setting tipico de "release"; idem O1 mas:
+         - Se intenta reordenar inst. para acomodarse a las CPUs
+         - El orden de ejcucion no tiene porque respetarse; se prioriza ramas rapidas en if's
+   
+* -g  -> incluir simbolos de debug, necesario para los debuggers
+
+* -funroll-loops -> Forzar desenrrollado de bucles
+
+* -march=   -> indicar instruction set (incuyendo generacion, por ej. ARMv8-A A64)
+
+* -mcpu =   -> indicar CPU concreta como target de opt
+
+* --profile-generate -> instrumenta el codigo para que el ejecutable haga un informe de uso
+                       de loops y branches
+                       (Requiere el flag -fprofile-arcs en el linkado)
+
+* --profile-use      -> optimiza usando informes previos emitidos por profile-generate
+
+
+
+ LLVM
+ ----
+ 
+ -fsanitize=  -> intrumenta el codigo para que capture varios tipos de error en runtime
+                 dificiles de encontrar de otro modo
+                 
+                 
+ 
