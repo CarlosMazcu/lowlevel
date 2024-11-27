@@ -76,36 +76,37 @@ static void FramerateLimit (int max_fps)
 
 
 static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, float projection, SDL_Surface* heightmap, int offset_x, int offset_y) {
-    short* ori = drawlist;  // Apuntador inicial del array de puntos
-    int grid_size = 64;     // Tamaño de la cuadrícula (64x64)
-    float spacing = 10.0f;  // Distancia entre puntos en la cuadrícula
-    float z_offset = 500.0f;  // Desplazamiento en profundidad para la proyección
-    float height_offset = 200.0f; // Desplazamiento en altura (vista inclinada)
-    int cx = w >> 1;        // Centro de la pantalla en X
-    int cy = h >> 1;        // Centro de la pantalla en Y
+    short* ori = drawlist; 
+    int grid_size = 64;    
+    float spacing = 10.0f; 
+    float z_offset = 500.0f;  
+    float height_offset = 200.0f; 
+    int cx = w >> 1;        
+    int cy = h >> 1;        
     
     
     if (!heightmap || heightmap->format->BitsPerPixel != 8) {
         fprintf(stderr, "Heightmap no válido.\n");
         return 0;
     }
-    // Iterar sobre la cuadrícula (64x64 puntos)
+    
     for (int z = 0; z < grid_size; z++) {
         for (int x = 0; x < grid_size; x++) {
 
-            int sample_x = (offset_x + x) % heightmap->w; // Coordenada X con desplazamiento
+            // desplazamiento ppara el sampple
+            int sample_x = (offset_x + x) % heightmap->w; 
             int sample_y = (offset_y + z) % heightmap->h;
 
+            // leer el pixel
             unsigned char* pixel = (unsigned char*)heightmap->pixels + (sample_y * heightmap->pitch) + sample_x;
             float fy = (*pixel);
+
+            //offset vista desde arriba
             fy -= height_offset;
 
             // Coordenadas 3D de la cuadrícula
             float fx = (x - (grid_size / 2)) * spacing; // Coordenada X centrada
             float fz = (z - (grid_size / 2)) * spacing; // Coordenada Z centrada
-            //float fy = 0.0f;                            // Coordenada Y (altura del terreno)
-
-            // Aplicar un offset para simular una vista desde arriba
 
             // Proyección en perspectiva
             float px = cx + (fx * projection) / (z_offset + fz);
@@ -115,7 +116,7 @@ static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, 
             if (px >= 0 && py >= 0 && px < w && py < h) {
                 drawlist[0] = (short)px;     // Coordenada X proyectada
                 drawlist[1] = (short)py;     // Coordenada Y proyectada
-                drawlist[2] = 255;           // Color del punto (índice de paleta)
+                drawlist[2] = (z + (x << 2)) & 0xff;           // Color del punto
                 drawlist += 3;               // Avanzar al siguiente punto
             }
         }
