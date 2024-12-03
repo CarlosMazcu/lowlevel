@@ -1,0 +1,38 @@
+
+* Salir
+
+  > quit
+
+* Ejecutar desde el principio
+ 
+  > run
+
+* Declarar los argumentos
+
+  Al ejecutarse un programa con gdb, cualquier argumento necesario debe declararse antes del "run"
+
+  > set args textura.jpg
+
+* Imprimir valores 
+
+  > p 56 * 78         -> resolver operaciones 
+  > p s_num_agentes   -> consultar variables
+  > p agente_pos.x    -> o miembros de clases/estructuras
+
+  en hexadecimal:
+  > p/x step_u
+
+* Imprimir valores en cada parada del programa
+
+  > display s_numagentes   -> ver como evoluciona esta variable global
+  > display $eax           -> idem de el registro eax en una cpu x86
+  > display $pc            -> idem de el registro "program counter"
+  > display/i $pc          -> ver la instruccion asm actual en cada parada
+
+* Breakpoint de datos/memorir
+
+  > watch *pBuffer         -> stop cuando el programa toque la memoria apuntada por pBuffer
+
+
+  
+

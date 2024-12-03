@@ -1,0 +1,189 @@
+
+Esta texto documenta la unidad de coma flotante "VFP" usada en muchos micros ARM.
+El nombre completo es "Vector Floating Point". 
+
+La palabra "vector" es engañosa; en realidad esta unidad no esta orientada a 
+vectores (los instruction sets SSE de Intel/AMD si son vectoriales por ejemplo). 
+La VFP tiene un modo de operacion especial (muy poco utilizado) para encadenar 
+operaciones escalares normales, de ahi su nombre. Este modo no ofrece ninguna
+mejora de velocidad respecto al modo escalar.
+
+La unidad NEON, existente en todos los ARM modernos si que es una unidad 
+vectorial y tiene cierta relacion con la VFP, que debe estudiarse aparte.
+
+La VFP se trata de una unidad de coma flotante para escalares de single y double 
+precision, muy orientada al lenguage C.
+
+Las instrucciones comienzan por la letra "f" y terminan en "s" o "d" dependiendo 
+de si trabajan en single precision o double:
+
+    fadds s0,s1,s2    @ single (tipo de C "float")
+    faddd d0,d1,d2     @ double (tipo de C "double")
+
+Su formato habitual es de 3 operadores; no existe nada parecido al shifter
+operand, ni se pueden usar numeros inmediatos como operadores.
+
+Las instrucciones admiten predicacion: su ejecucion puede ser condicional:
+
+    fcmps   s0,s1        @ comparar los regis. s0 y s1 formato single
+    faddsgt s2,s3,s4     @ Sumar s3 y s4 si el reg. s0 > s1
+
+Hay que aclarar que la "s" no guarda ninguna relacion con el sufijo "s" del inst.
+set de enteros ("movs r0,r1", "subs r0,r0,#1").
+
+IMPORTANTE: Existe una sintaxis de ensamblador alternativa a la de este 
+tutorial, que se usa para el modo vectorial y converge con el ensamblador
+de la unidad vectorial NEON (micros Cortex A8 y posteriores). Esta sintaxis 
+comienza las instrucciones por "v" en lugar de "f" ("vadd", "vmul"…)
+
+Registros
+---------
+
+Las operaciones matematicas se realizan sobre un banco de registros propio.
+Para las lecturas y escrituras se usa el banco de registros habitual, como 
+punteros.
+
+Los registros de la VFP son 32, desde s0 hasta s31. Es decir, 32 registros float.
+Sin embargo, estos mismos registros actuan por pares para trabajar con double.
+En ese caso se usan los nombres d0 hasta d15.
+
+ s0 -> d0
+ s1
+ s2 -> d1
+ s3
+ ...
+ s30 -> d15
+ s31
+
+Ademas existe registros especiales (FPSCR, FPEXC) con los que se puede 
+configurar el tipo de redondeo y el comportamiento en caso de excepciones 
+(ej: x/0).
+Normalmente en un entorno C la VFP estara configurada conforme al standard
+por defecto.
+
+Load/Store
+----------
+
+Se usan los reg. enteros r0-r14 como punteros para la lectura o escritura.
+
+Simples:
+
+    fld/suf.  reg1,[reg2,#offset] -> ej. flds s0,[r0,#4] ->  s0 = *(r0 + 4) 
+    fst/suf.  reg1,[reg2,#offset] -> ej. fstd d0,[r0,#16] -> *(r0 + 16) = d0
+
+El sufijo es "s" o "d" para single o double.
+
+Multiples (como ldm en ARM integer, incluyendo opciones como ia,db, !, etc).
+NOTA: Los registros cargados o salvados han de ser consecutivos.
+
+    fldm  reg1,{reg2,reg3,...}
+    fstm  reg1,{reg2,reg3,...}
+
+
+Operaciones
+-----------
+
+De 2 operadores:
+
+    fabs  reg1, reg2  -> ej. fabsd d0,d1 -> d0 = absoluto (d1) 
+    fcpy  reg1, reg2  -> ej. fcpys s0,s1 -> s0 = s1 
+    fneg  reg1, reg2  -> ej. fnegd d0,d1 -> d0 = -d1 
+    fsqrt reg1, reg2  -> ej. fsqrts s0,s1 -> s0 = s1 ^ 0.5 
+
+De 3 operadores
+
+    fadd  reg1, reg2, reg3 -> fadds s0,s1,s2 -> s0 = s1 + s2
+    fsub  reg1, reg2, reg3 -> fsubs s0,s1,s2 -> s0 = s1 - s2
+    fmul  reg1, reg2, reg3 -> fmuls s0,s1,s2 -> s0 = s1 * s2
+    fmac  reg1, reg2, reg3 -> fmacs  s0,s1,s2 -> s0 = s0 + s1 * s2
+    fnmac reg1, reg2, reg3 -> fnmacs s0,s1,s2 -> s0 = s0 - s1 * s2
+    fmsc  reg1, reg2, reg3 -> fmscs  s0,s1,s2 -> s0 = -s0 + s1 * s2
+    fnmsc reg1, reg2, reg3 -> fnmscs s0,s1,s2 -> s0 = -s0 - s1 * s2
+    fdiv  reg1, reg2, reg3 -> fdivs s0,s1,s2 -> s0 = s1 / s2
+   
+AUSENCIAS NOTABLES:
+Hay que observar que (al igual que muchas otras FPUs) la VFP no 
+ofrece los calculos trigonometricos habituales (sin, cos, atan2) ni funciones
+exponenciales (pow) o logaritmicas. Tampoco "floor" o "ceil".
+Estas funciones reciben el nombre de "funciones trascendentales".
+
+
+ Compare, branching
+ ------------------
+
+Usando 1 operador
+
+    fcmpz reg   -> ej. fcmpzd d3 -> Comparar d3 con 0
+
+De 2 operadores
+
+    fcmp reg1, reg2 -> ej. fcmps s0,s1 -> comparar s0 con s1 
+
+
+Las instrucciones de branching utilizables son las standard ARM.
+
+    fcmps s0,s1
+    bgt   bigger
+
+NOTA: En coma flotante no se suele usar la comparacion "==". Su
+uso debe ser estudiado cuidadosamente.
+
+
+ Conversiones de tipo
+ --------------------
+
+Conversiones entre single y double.
+
+    fcvtsd reg1, reg2 -> ej. fcvtsd s0,d0 -> Single s0 = Double d0
+    fcvtds reg1, reg2 -> ej. fcvtds d0,s0 -> Double d0 = Single s0 
+
+Las conversiones int<->float se realizan en el mismo banco de registros
+de manera que para pasar el resultado a la parte entera hay que pasar
+por memoria o usar otra inst. de transpaso de valores (fmrs, otros).
+
+ATENCION: cuando se guarda un numero entero en un registro flotante, NO
+se puede operar con el! Solo se puede guardar a memoria o convertirlo a 
+flotante.
+
+    fsito reg1, reg2 -> signed int to floating point  
+    fuito reg1, reg2 -> unsigned int to floating point
+    ftosi reg1, reg2 -> floating point to signed int
+    ftoui reg1, reg2 -> floating point to unsigned int 
+
+    Ej:  fsitod d0,s10  -> d0 = (double)s10, conteniendo s10 un entero con signo
+         fuitos s5,s4   -> s5 = (float)s4, conteniendo s10 un entero sin signo   
+         ftosis s2,s5 -> s2 = (int)s5 
+         ftouid s3,d4 -> s3 = (unsigned int)d4
+
+    Ej. secuencia de conversion single precision float -> integer	
+
+         ftosis s0,s1    @ s0 = (int)s1
+         @ ahora s0 guarda un numero entero, no un flotante
+         fsts   s0,[sp]  @ guardar s0 en memoria (la pila en este caso)
+         ldr    r0,[sp]  @ ahora r0 contiene el numero entero que deseabamos
+ 
+NOTA: En versiones posteriores del instruction set se puede usar la inst. vmov
+para copiar datos entre bancos de registros
+
+         ftosis s0,s1  @ mismo ejemplo usando vmov
+         vmov   r0,s0
+ 
+
+ ABI, call procedure, prolog-epilog
+ ----------------------------------
+
+Los registros s16-s31 (= d8-d15) deben ser preservados dentro de 
+una funcion. Si son usados deben guardarse en la pila y recuperarse
+posteriormente.
+
+Ej. con doubles
+
+    fstmdbd sp!,{d8,d9,d10,d11,d12,d13,d14,d15}
+     
+    [codigo]
+
+    fldmiad sp!,{d8,d9,d10,d11,d12,d13,d14,d15}
+
+
+
+

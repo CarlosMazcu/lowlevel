@@ -1,0 +1,167 @@
+
+01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567
+
+ --------------------------------
+ COMA FIJA, FIXED POINT, Q FORMAT
+ --------------------------------
+
+    Coma fija es el nombre que se le da a un formato numerico entero, en el cual una porcion de 
+las cifras esta dedicado a expresar la parte fraccional. 
+
+    Casi todo el mundo esta familiarizada con diversos formatos de coma fija, aunque no
+los conozca por ese nombre. Ej.
+
+   2,0123 metros    -> coma flotante
+   2012 milimetros  -> equivalente en coma fija de 3 decimales
+
+   1.12             -> coma flotante
+   112%             -> equivalente en coma fija de 2 decimales
+
+    Cuando se opera en estos formatos de coma fija, cualquier decimal que exceda el formato se
+omite o redondea, con el fin de mantener el numero de decimales fijo.
+
+   Operacion en coma flotante 0.123 m / 2 = 0.615 m
+   Operacion en coma fija     123 mm / 2 = 61 mm  (se pierden 0.5 mm)
+
+    En algunos ambitos coma fija se refiere a todos los enteros, lleven o no parte fraccional. 
+Esto ocurre por ejemplo en la doc. de IBM, que se refiere siempre a las unidades de enteros de 
+la CPU como unidades de coma fija.
+
+    La parte fraccional de un numero en coma fija es una CONVENCION que establece el programador. 
+La CPU no tiene ningun mecanismo especial para trabajar con coma fija (exceptuando CPUs 
+especializadas como DSPs o GPUs).
+
+  USO EN ORDENADORES
+  ------------------
+
+    La coma fija es un formato popular en informatica al tener un bajo coste de memoria y 
+computacion. Sin embargo es importante entender que su formato no es identico a los usados de 
+manera comun en base diez. Para formar numeros de coma fija en un ordenador usamos base 2, ya
+que las cifras que podemos manipular en un numero entero son bits.
+
+    A la coma fija en base 2 se la conoce como "Q number format".
+
+    Un ejemplo basico seria el formato Q8 o FX8, o fixed point con 8 bits de fraccion. Este ej.
+tiene 24 bits de parte entera y 8 bits de parte fraccionaria.
+
+    31 -------------------------------- 0  FX8
+       EEEEEEEEEEEEEEEEEEEEEEEEFFFFFFFF
+
+    A la parte fraccional se le llama RADIX. Un numero FX8 es un numero de coma fija con RADIX 8.
+
+    Algunos ejemplos de numeros de coma flotante representados en FX8:
+
+       Flotante  FX8 binario FX8 hexadecimal  FX8 decimal
+       ---------------------------------------------------
+         1.0     100000000   0x100            256
+         2.0    1000000000   0x200            512
+         0.5      10000000    0x80            128
+         1.5     110000000   0x180            384 (256+128)
+         3.5    1110000000   0x380            896 (3*256 + 128)
+
+    Cuanto mayor es el RADIX, mayor es la precision que se puede expresar.
+Un numero FX8 puede expresar una fraccion de hasta 1/256 de unidad.
+Un numero FX16 puede expresar una fraccion de hasta 1/65536 de unidad.
+
+         
+  CONVERSION ENTRE FORMATOS
+  -------------------------
+
+ *  La forma generica de convertir un numero de coma flotante a coma fija es multiplicarlo por
+la unidad en ese formato. Es identico a lo que se hace en la coma fija de base diez.
+
+   Ej. pasar un numero a tantos por cien: 0,123 -> 0.123 * 100 = 12%
+
+    En los formatos de coma fija para ordenadores siempre trabajaremos en un numero "redondo"
+en binario, una potencia de 2. Ejemplos
+
+       Flotante   Radix Unidad     Q
+       -------------------------------
+       0.123      8     256       31      (0.123 * 256 = 31)
+       0.123     16   65536     8060    
+       0.123     12    4096      503    
+       0.123      5      32        3
+
+ *  Para convertir un numero de coma fija a coma flotante, debemos usar la expresion reciproca.
+Para un numero FX8 que representa 1.5:
+
+    384 / 256.0 = 1.5
+
+...o de manera mas eficiente para evitar la division:
+
+   384 * 0.00390625 = 1.5
+
+    Todas las formulas de conversion entre formatos implementadas en C/C++ deben ser estrictas
+en las diferentes conversiones int->float<-int implicadas, para que no se pierdan las fracciones.
+
+    Ej.: int num_fx8 = (int)(real * 256.0f);
+
+         o
+ 
+         int num_fx8 = (int)(real * (float)(1 << 8));  // 1 << 8 es igual a 2^8
+
+ *  Por ultimo, para convertir entre numeros de coma fija de diferente RADIX. Es tan sencillo 
+como desplazar los bits para ajustar su parte fraccion.
+
+    FX8 << 4 = FX12
+    FX8 >> 4 = FX4
+
+    Tambien se puede usar multiplicacion y division. El resultado sera el mismo (exceptuando
+negativos, ya que el shifting negativo redondea de manera diferente a la division entera).
+
+    FX8 * 16 = FX12
+    FX8 / 16 = FX4
+
+
+
+    OPERACIONES EN COMA FIJA
+   --------------------------
+
+ - Sumas y restas. Los numeros de mismo RADIX se pueden sumar y restar sin problemas. En caso de 
+   diferentes RADIX, han de igualarse previamente.
+    
+        int res = a_fx8 - b_fx8;          // OK; res es FX8
+        int res = a_fx8 - b_fx10;         // ERROR 
+        int res = (a_fx8 << 2) - b_fx10;  // OK; res es FX10
+   
+
+ - Multiplicacion. Las multiplicaciones entre numeros de coma fija no tienen restricciones de RADIX.
+   Al multiplicarse, los RADIX se suman.
+
+        int res = a_fx8 * b_fx8;   // res es FX16
+        int res = a_fx12 * b_fx8;  // res es FX20
+        int res = a * b_fx10;      // res es FX10
+
+   Hay que destacar que los numeros en coma fija tienden a ser grandes, con lo que al multiplicarlos hay 
+que vigilar posibles overflows.
+
+ - Division. La division admite numeros de diferente RADIX, pero existe una restriccion.
+   Al dividir, los RADIX se restan. Para que el resultado tenga sentido, la resta siempre debe dar >= 0.
+ 
+        int res = a_fx8 / b_fx8;   // res es FX0, no tienen parte fraccionaria
+        int res = a_fx12 / b_fx4;  // res es FX8
+        int res = a_fx4 / b_fx8;   // ERROR
+
+   La division en coma fija destruye gran parte de los bits fraccionarios, por lo que hay tomar medidas
+   cautelares antes de dividir (si se desea tener precision en el resultado). 
+
+        int res = (a << 8) / b;  // "res" es FX8 y tiene bits de fraccion (correctos)
+
+
+ - Extraer parte entera (2.333 -> 2.0)
+   Para ello basta usar el operador >>, eliminando todos los bits de la fraccion y bajando la
+   parte entera hasta el bit 0.
+
+       int int_part = num_fx8 >> 8;
+
+ - Extraer parte fraccional (2,333 -> 0,333).
+   En este caso queremos eliminar los bits que representan la parte entera y respetar la fraccion.
+   Podemos hacerlo de 2 maneras.
+
+       int frac_part = num_fx8 & 0xff;    // & 11111111b
+
+       o
+
+       int frac_part = (num_fx8 << 24) >> 24;  // Solo valido en variables de 32 bits
+
+

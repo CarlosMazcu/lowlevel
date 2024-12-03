@@ -1,0 +1,25 @@
+
+# Un editor de texto sencillo y practico
+sudo apt-get install gedit
+
+# Compiladores 
+#  para lo que requiera c++
+sudo apt-get install g++  
+#  clang, alternativa a gcc
+sudo apt-get install clang  
+
+# Librerias SDL para desarrollo
+sudo apt-get install libsdl1.2-dev
+sudo apt-get install libsdl-image-1.3dev
+
+# Debuggers
+sudo apt-get install ddd
+sudo apt-get install valgrind
+sudo apt-get install nemiver
+
+# Editor grafico
+sudo apt-get install gimp
+
+# Emulador de Gameboy Advance (vba)
+sudo apt-get install visualboyadvance 
+

@@ -1,0 +1,65 @@
+
+* Moverse por directorios
+
+  > cd NombreDir
+
+  Ir al directorio "home"
+  > cd ~
+  o simplemente
+  > cd
+
+  Ir a la raiz
+  > cd /
+
+* Listar ficheros
+
+  > ls
+  con mas detalle
+  > ls -l
+  con subdirectorios
+  > ls -l -R   (R mayuscula)
+  con una pausa por pagina
+  > ls | more
+
+* Añadir permisos de ejecucion a un fichero
+
+  > chmod 755 Nombrefichero
+
+* Para ver procesos activos
+
+  > top
+  
+* Para ver procesos activos que cuelgan de tu terminal
+
+  > ps
+
+* Para matar una tarea que se ha colgado
+
+  Se abre otra terminal y se busca la tarea a matar con top.
+  Se identifica el numero de tarea y:
+  > kill -9 Numero
+
+* Encontrar un archivo o directorio por nombre
+
+  > find NombreDirectorioBase -name "cascarria.c"
+  ejemplos:
+  > sudo find / -name "SDL.*"  -> buscar todos los ficheros comenzados por "SDL" desde la raiz,  
+                                  con permisos de superusuario
+
+* Encontrar textos dentro de archivos
+  
+  > grep CadenaDeTexto Archivo
+  ejemplos:
+  > grep -r "static" Codigo/  -> buscar todos los ficheros que contengan la palabra "static",
+                                 en el directorio "Codigo", recursivamente
+
+  > grep -i "pintar" render.c  -> buscar en el fichero "render.c" la palabra "pintar", ignorando
+                                  las diferencias mayusculas / minusculas
+
+* Cronometrar un comando
+
+  > time Comando
+  ejemplo
+  > time find /usr/include -name "*.h"
+
+ 

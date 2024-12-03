@@ -44,84 +44,41 @@ static void FramerateLimit (int max_fps)
 // ---------------------------------------------------------------------------
 
 // Fully UNoptimized graphics effect example
-/*static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, float projection) {
-    short* ori = drawlist;  // Apuntador inicial del array de puntos
-    int grid_size = 64;     // Tamaño de la cuadrícula (64x64)
-    float spacing = 10.0f;  // Distancia entre puntos en la cuadrícula
+static int DoEffect (short* drawlist, int max_vertices, int w, int h, int frame, float projection)
+{
+  float anim1 = 0.003f * (float)frame;
+  float anim2 = 0.0015f * (float)frame;
+  short* ori = drawlist;
+  int i, j;
+  int cx = w >> 1;  // Screen center
+  int cy = h >> 1; 
+  int n_sec = 200;
+  int n_rad = 45;
+  for(j = 0; j < n_sec; j++) {
+    for(i = 0; i < n_rad; i++) {
+      const float r1 = 150.0f;
+      const float r2 = 350.0f;
+      float alpha = 2.0f * 3.1426f * ((float)j)/(float)n_sec;
+      float beta  = 2.0f * 3.1426f * ((float)i)/(float)n_rad;
+      float x = (r2 + r1 * cos(beta + anim1)) * cos(alpha + anim2);
+      float y = (r2 + r1 * cos(beta + anim1)) * sin(alpha + anim2);
+      float z = r1 * sin(beta + anim1);
+      z += 1000.0f;
+      int xp = cx + (int)((x * projection) / z);
+      int yp = cy - (int)((y * projection) / z);  
+      if ((xp >= 0) && (yp >= 0) && (xp < w) && (yp < h)) {
+        drawlist[0] = xp;
+        drawlist[1] = yp;
+        drawlist[2] = (i + (j<<2)) & 0xff;
+        drawlist += 3;
+      }
+    } 
+  }
 
-    // Desplazamiento para centrar la cuadrícula en la pantalla
-    int offset_x = (w - (grid_size * spacing)) / 2;
-    int offset_y = (h - (grid_size * spacing)) / 2;
-
-    // Iterar sobre la cuadrícula (64x64 puntos)
-    for (int z = 0; z < grid_size; z++) {
-        for (int x = 0; x < grid_size; x++) {
-            // Coordenadas 2D del punto en la cuadrícula
-            float px = offset_x + x * spacing; // Posición X en pantalla
-            float py = offset_y + z * spacing; // Posición Y en pantalla
-
-            // Asegurar que el punto está dentro de los límites de la pantalla
-            if (px >= 0 && py >= 0 && px < w && py < h) {
-                drawlist[0] = (short)px;     // Coordenada X
-                drawlist[1] = (short)py;     // Coordenada Y
-                drawlist[2] = 128;           // Color del punto (índice de paleta)
-                drawlist += 3;               // Avanzar al siguiente punto
-            }
-        }
-    }
-
-    // Número total de vértices generados
-    return (drawlist - ori) / 3;
-}*/
-
-
-static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, float projection, SDL_Surface* heightmap, int offset_x, int offset_y) {
-    short* ori = drawlist; 
-    int grid_size = 64;    
-    float spacing = 10.0f; 
-    float z_offset = 600.0f;  
-    float height_offset = 200.0f; 
-    int cx = w >> 1;        
-    int cy = h >> 1;        
-    
-    
-
-    for (int z = 0; z < grid_size; z++) {
-        for (int x = 0; x < grid_size; x++) {
-
-            // desplazamiento ppara el sampple
-            int sample_x = (offset_x + x) % heightmap->w; 
-            int sample_y = (offset_y + z) % heightmap->h;
-
-            // leer el pixel
-            unsigned char* pixel = (unsigned char*)heightmap->pixels + (sample_y * heightmap->pitch) + sample_x;
-            float fy = (*pixel);
-
-            //offset vista desde arriba
-            fy -= height_offset;
-
-            // Coordenadas 3D de la cuadrícula
-            float fx = (x - (grid_size / 2)) * spacing; // x centrada
-            float fz = (z - (grid_size / 2)) * spacing; // z centrada
-
-            // Proyección en perspectiva
-            float px = cx + (fx * projection) / (z_offset + fz);
-            float py = cy - (fy * projection) / (z_offset + fz);
-
-            // comprobar que el punto está dentro de los límites de la pantalla
-            if (px >= 0 && py >= 0 && px < w && py < h) {
-                drawlist[0] = (short)px;     // Coordenada X proyectada
-                drawlist[1] = (short)py;     // Coordenada Y proyectada
-                drawlist[2] = (z + (x << 1)) & 0xff;           // Color del punto
-                drawlist += 3;               // Avanzar al siguiente punto
-            }
-        }
-    }
-
-    // Número total de vértices generados
-    return (drawlist - ori) / 3;
+  // Devuelve el numero de vertices que se han metido en la lista de pintado
+  // No es necesario hacerlo con resta de punteros, solo importa devolver el numero correcto
+  return (drawlist - ori) / 3;
 }
-
 
 // ---------------------------------------------------------------------------
 
@@ -148,13 +105,6 @@ int main ( int argc, char** argv)
   SDL_Surface  *g_SDLSrf;
   int req_w = 1024;
   int req_h = 768; 
-
-  /////////
-  static int offset_x_ = 10; // Offset inicial en X
-  static int offset_y_ = 10; // Offset inicial en Y
-  static int speed_x = 1;  // Velocidad en X
-  static int speed_y = 1;  // Velocidad en Y
-  ////////
 
   if ( argc < 2) { fprintf ( stderr, "I need the cpu speed in Mhz!\n"); exit(0);}
   cpu_mhz = atoi( argv[1]);
@@ -186,55 +136,25 @@ int main ( int argc, char** argv)
   float hfov = 60.0f * ((3.1416f * 2.0f) / 360.0f);  // Degrees to radians
   float half_scr_w = (float)(req_w >> 1);
   float projection = (1.0f / tan ( hfov * 0.5f)) * half_scr_w;
-/////////////
-   SDL_Surface* heightmap = SDL_LoadBMP("img/heightmap2_24bits.bmp");
-    if (!heightmap) {
-        fprintf(stderr, "Error al cargar el heightmap: %s\n", SDL_GetError());
-        return -1;
-    }
-    if (heightmap->format->BitsPerPixel != 8) {
-        fprintf(stderr, "Heightmap no válido.\n");
-        return 0;
-    }
-    
-    
-    // Verificar formato del heightmap
-    if (heightmap->format->BitsPerPixel != 8) {
-        fprintf(stderr, "El heightmap debe ser en escala de grises (8 bits).\n");
-        SDL_FreeSurface(heightmap);
-        return -1;
-    }
-///////////////
+
   // Main loop
   g_SDLSrf = SDL_GetVideoSurface();
   while ( !end) { 
 
     SDL_Event event;
-////////
 
- 
-//    diagonal
- 
-   offset_x_ += speed_x;
-    offset_y_ += speed_y;
-
-    if (offset_x_ + 80 >= heightmap->w || offset_x_ <= 4) speed_x *= -1; 
-    if (offset_y_ + 80 >= heightmap->h || offset_y_ <= 4) speed_y *= -1; 
-
-    //espiral
-////////
     // Your gfx effect goes here
 
     ChronoWatchReset();
-    int n_draw = DoEffect (drawlist, n_vertices, g_SDLSrf->w, g_SDLSrf->h, dump, projection, heightmap, offset_x_, offset_y_);
+    int n_draw = DoEffect (drawlist, n_vertices, g_SDLSrf->w, g_SDLSrf->h, dump, projection);
     assert(n_draw <= n_vertices);
-    ChronoShow ( "Landscape Loco Festival", n_draw);
+    ChronoShow ( "Donut festival", n_draw);
 
     // Draw vertices; don't modify this section
     // Lock screen to get access to the memory array
     SDL_LockSurface( g_SDLSrf);
 
-    // Clean the screenss
+    // Clean the screen
     SDL_FillRect(g_SDLSrf, NULL, SDL_MapRGB(g_SDLSrf->format, 0, 0, 0));
     ChronoShow ( "Clean", g_SDLSrf->w * g_SDLSrf->h);
 

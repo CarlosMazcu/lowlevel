@@ -1,0 +1,186 @@
+
+* Timeline de la programacion de bajo nivel en los videojuegos
+
+
+  - 1975 Chuck Peedle y el 6502: $300 -> $25, KIM-1, Apple I, Commodore Pet. Excepcion TRS-80
+  - 1977 Atari 2600 (Jay Miner)
+  - 1978 8086 (16 bits)
+  - 1979 Motorola 68k (32 bits); 1er micro moderno domestico
+  - 1979 Jay Miner Atari XL
+  - 1979 Infocom Zork (MDL -> Lisp, z-machine)
+  - 1980 FS1 ( luego Microsoft flight simulator)
+  - 1981 MIPS
+  - 1982 C64
+  - 1982 Pitfall (atari 2600)
+  - 1983 USA Home Computers war
+  - 1983 Atari: I Robot
+  - 1983 USA videogame crash (E.T., dragster)
+  - 1984 Aparicion McIntosh
+  - 1984 Elite (BBC)
+  - 1984 Lucas: Rescue on fractalus, Koronis rift, The Eidolon
+  - 1985 Nintendo NES, SEGA master system
+  - 1985 Presentacion del Amiga, Atari ST. Primeras librerias graficas en OS
+  - 1985 Alternate reality (XL)
+  - 1985 SEGA sprite scaling: Space harrier, Hang-on, Out Run
+  - 1985 Mercenary (XL)
+  - 1985 Skool daze (spectrum)
+  - 1986 Great scape
+  - 1987 Zarch / Virus (Acorn Archimedes, ARM)
+  - 1987 Sid Meier's Pirates (C64 Basic)
+  - 1987 Domark: Motor 3d multiplataforma. "Freescape command language". Driller, Total Eclipse, Castle master
+  - 1987 Lucas: Maniac Mansion (forth)
+  - 1987 GNU compiler comienza su andadura en 68k
+  - 1988 SEGA megadrive,  Atari Lynx
+  - 1989 Shadow of the beast
+  - 1989 Peter Molyneux Populous
+  - 1989 Hard drivin, Stun runner
+  - 1989 Stunt car racer (3d, multiplayer por cable)
+  - 1990 Nintendo Snes
+  - 1991 Linux comienza su andadura, popularizando la GNU compiler tools
+  - 1991 Lemmings
+  - 1992 Alianza PowerPC
+  - 1992 Virtua Racing
+  - 1992 Wolfenstein
+  - 1992 Comanche: maximum overkill
+  - 1993 Virtua fighter
+  - 1993 Doom
+  - 1993 Apple Newton. Apple lleva el ARM al espacio movil
+  - 1993 Settlers. Syndicate (amiga). Decadencia de la escuela "solo asm"
+  - 1994 3d console wars: Psx, Atari jaguar, 3DO, Sega saturn
+  - 1994 Muere Commodore
+  - 1994 Robinson's requiem
+  - 1994 Marathon (Bungee)
+  - 1994 Need for speed 3DO
+  - 1996 Muere Atari, Apple peligra
+  - 1996 N64, ultima consola de cartucho
+  - 1996 Quake. Punto mas alto de sofisticacion/popularidad del software rendering
+  - 1996 ATI rage II    
+  - 1996 AB3D 2
+  - 1996 Palm OS. Hito de la revolucion movil. Ultimo uso importante del 68k
+  - 1997 Nvidia Riva
+  - 1997? Visual C++ 5.0
+  - 1998 Dreamcast. Triunfo de los SDK. Renderware
+  - 1998 Pentium II (descendiente pentium pro). Primer micro con timings "secretos"
+  - 1999 Outcast (PC), ultimo juego render software de relevancia
+  - 2000 PS2, ultima consola "bare metal"
+  - 2001 GBA, ultima consola portatil "bare metal"
+  - 2001 GTA 3 (renderware)
+  - 2006 PS3, Cell, GPU standard -> convergencia con el mundo PC. Todas la consolas usan PowerPC
+  - 2007 iPhone (1er dispositivo movil con OS y SDK de calidad)
+  - 2013 Xbox ONE, PS4. Todos los sistemas y consolas desktop son x86 exceptuando Nintendo
+  - 2020 PS5
+
+  Comentarios
+
+  - Anterior al 77: previo a los HC
+                        Grandes ordenadores con terminales, no existe el HC
+                        Pequeños juegos en ordenadores universitarios, militares y de grandes empresas (HPC)
+                        Atracciones electromecanicas, pinballs
+                        Primeras maquinas puramente electronicas (pong)
+                        Kits de ordenador (Altair)
+                        Programacion low-level: PLCs, key punching (hex), tarjetas perforadas, monitores asm
+                        Clubs de informatica, copia de soft generalizada
+                        Coders: 
+                          - Universitarios (matematicos, fisicos), aficionados a la electronica
+                          - Profesionales del high end probando suerte
+                          - Inicio de las primeras empresas de videojuegos (pocas sobreviven, Activision y Japonesas)
+                          - Las ganancias se concentran en arcades y consolas
+
+  - Del 77 hasta el 94: entrada del HC y desarrollo de la industria del videojuego + entrada del PC
+  
+                        HC en los hogares + PCs en pequeños/medianos negocios + big iron en industria/banca/ejercito/academia
+                        Se reducen progresivamente las distancias entre los 3 segmentos
+                        Asm en las recreativas (EPROMS) y consolas. No OS. 
+                        Asm en todas las areas, mucha incompatibilidad. Macroensambladores. Monitores asm
+                        HC: Basic, algo de asm. Juegos comerciales escasos. Forth y otros muy raramente. Compiladores C/Pascal solo en Atari/Amiga/PC, muy caros
+                        HC: El uso del OS en los HC se va esquivando paulatinamente hasta prescindir de el
+                        HC: Uso del OS; no existen librerias graficas o de sonido
+                        Dominio inicial del 6502, luego del z80; el 68k y el x86 entran con fuerza hacia el 86
+                        Coders: 
+                          - Idem 77 + comienzo del bedroom coding; estudiantes de secundaria, drop outs
+                          - "Bedroom coding" en los HC. Explosion de ideas, especialmente hasta el 85
+                          - Intercambio de informacion  por revistas y por escena del cracking
+                          - Aparece la scene; cracking. Hacia el 90 bifurca a demoscene
+                          - Nacen las primeras empresas estables y grandes de videojuegos (Electronic Arts)
+                          - Cientos de miniempresas
+                          - No se usan repositorios, se comparte poco codigo. Hackeo, desensamblado ("rippers")
+                          - Trabajo en solitario, subcontratacion codigo+musica
+                        
+
+  - Del 94 hasta el 2000: maduracion tecnologia base
+  
+                        Los clonicos PC destruyen el home computer y relegan a los micros no x86 
+                         (como ARM o 68k) a aplicaciones embedded
+                        Los clonicos hieren de muerte a los high end RISC. Solo sobrevivira el "big iron" mas caro
+                        Lenguaje: C y algo de Asm; tambien en las recreativas. Watcom C, GNU C
+                        El "metal hitting" va desapareciendo y las primeras librerias creibles de videojuegos aparecen (direct x, ogl)
+                        El "bare metal" sobrevive en consolas y recreativas
+                        El Asm puro desaparece
+                        La rapida evolucion del pc acaba con las plataformas estables o "closed boxes"
+                        La mayoria de los motores son custom, muchos de usar y tirar. El codigo suele ser poco reaprovechable.
+                        Integracion vertical: cada equipo hace su motor y herramientas
+                          (hacia el final de los 90 los motores 3d comerciales como renderware van apareciendo).
+                        La coma flotante va sustituyendo a la coma fija
+                        Va introduciendose el C++
+                        Aparicion de la OO, de la memoria virtual -> "bloatware". Progresiva aparicion en el videojuego
+
+                        Evolucion rapida del 3D: poligonos flat -> texture mapping -> z buffer/perspectiva -> iluminaciones  
+                        Ivan Sutherland: The wheel of reincarnation. El uso de hardware grafico en los 80 
+                         da paso al soft rendering; este es sustituido por hardare grafico y luego reaparece en forma de GPUs
+                         
+                        Coders:
+                          - Decadencia rapida del "bedroom coding", pero aun predominan los autdidactas
+                          - Perfil tipico formacion universitaria + extra autodidacta. Drop outs.
+                          - Trabajo en equipo, desaparicion del cowboy
+                          - Figura del rockstar; idolizacion de los coders mas tecnicos. Optimizacion + productividad
+                          - La demoscene alcanza su maxima popularidad. Cantera de programadores
+                          - Explosion de empresas de tamaño medio y grandes. Profesionalizacion
+                          - Se empiezan a sufrir "crunch times" excesivos; competicion
+
+  - Del 2000 hasta la 2012: estancamiento tecnologico de la base + crecimiento HW y CG
+  
+                        Mejoran los deiseños y contenidos del videojuego, se quita el foco de las 3D
+                        C++ se convierte en el standard, pero aparecen los lenguajes de scripting integrados (lua, blueprints)
+                        El progreso en tecnicas y metodologias de programacion se estanca progresivamente (no hay mas transferencia del high end)
+                        Los lenguajes dinamicos (flash, javascript) empiezan a usarse en productos comerciales
+                        Iphone, flash: Reaparece el bedroom coding lentamente
+                        Aparicion de las fisicas para videojuegos
+                        La programacion vectorial esta disponible universalmente, pero queda como opcion minoritaria y sin standarizar
+                        La computacion paralela se va introduciendo, pero su adopcion resulta problematica (CUDA, OpenCL, OpenMP, Compute)
+                        PS2 y GBA, ultimas consolas programadas en "bare metal"
+                        El PowerPC domina las consolas pero desaparece del resto del mercado (para luego desaparecer del todo)
+                        El ARM reaparece como alternativa al x86 y el PC
+                        Progresiva standarizacion de los pixels shaders
+                        La CPU pierde protagonismo. (Ivan Sutherland: "The wheel of reincarnation")
+                        La rivalidad ATI/Nvidia y Intel/AMD por el mercado del hardcore gamer empujan la tecnologia con fuerza
+                         (pero van siendo sustituidos por el mundo de los SoCs para movil y tablet)
+                        Surge una alternativa al OS: el navegador
+                        Los motores graficos reducen la necesidad de la programacion de bajo nivel, convirtiendola en una especialidad
+                        Japon sufre por quedarse fuera de la industria del motor grafico
+                        
+                        Coders:
+                          - La demoscene decae progresivamente. Dificultades de contratacion
+                          - Perfil tipico: Formacion universitaria + extra autodidacta  
+                          - Las carreras profesionales se empiezan a alargar; permanencia
+                          - Se reduce mucho el personalismo, el culto al rockstar
+                          - Se reduce la optimizacion, comienza a aparecer el bloatware
+                          - Declive de los debuggers
+                          - Programming fads (metaprogramming, extreme programming, test driven development, xml)
+                          - Especializaciones fuertes (IA, fisicas, CG, red)
+
+  - 2012 - actualidad: Algunas tendencias
+  
+                        - Siguen las dificultades de contratacion, especialmente en los perfiles tecnicos
+                        - En la demoscene el interes por la op. decae, centrandose mas en sintesis de datos y tecnica graficas avanzadas
+                        - Los antiguos programadores de bajo nivel que quedan adquieren status de intocables
+                        - Surge la figura del technical artist, a medio camino entre coder y grafista
+                        - Los motores graficos compiten y mueren; tendencia al monopolio de Epic
+                        - El uso de lenguajes embebidos pierde prestigio; se prefiere C# en unity, C++ en UE
+                        - Se comienzan a buscar alternativas a C++ (C#, Rust, Swift, incluso lenguajes interpretados -lentos- como python o Javascript)
+                        - Se exploran el raytracing como alternativa al rasterizado tradicional
+                        - El machine learning (concretamente redes neuronales) se comienza a popularizar
+                        - El dominio absoluto del paradigma de OO flaquea (ligeramente) 
+                        - Se empiezan a copiar tecnologias y metodologias del mundo de la gestion (como xml) aunque no siempre resulten apropiadas
+
+
+
