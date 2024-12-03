@@ -77,10 +77,11 @@ static void FramerateLimit (int max_fps)
 
 static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, float projection, SDL_Surface* heightmap, int offset_x, int offset_y) {
     short* ori = drawlist; 
-    int grid_size = 64;    
+    int grid_size = 64;
+    int origin_pos = grid_size >> 1;    
     float spacing = 10.0f; 
-    float z_offset = 600.0f;  
-    float height_offset = 200.0f; 
+    float z_offset = 1000.0f;  
+    float height_offset = 500.0f; 
     int cx = w >> 1;        
     int cy = h >> 1;        
     
@@ -89,22 +90,21 @@ static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, 
     for (int z = 0; z < grid_size; z++) {
         for (int x = 0; x < grid_size; x++) {
 
-            // desplazamiento ppara el sampple
-            int sample_x = (offset_x + x) % heightmap->w; 
-            int sample_y = (offset_y + z) % heightmap->h;
+            // desplazamiento del sampple
+            int sample_x = (offset_x + x); 
+            int sample_y = (offset_y + z);
+            // posiciones en pantalla 
+            float fx = (x - origin_pos) * spacing; 
+            float fz = (z - origin_pos) * spacing; 
 
-            // leer el pixel
+            // leer el pixel // posible optimización -> precargar los pixeles fuera
             unsigned char* pixel = (unsigned char*)heightmap->pixels + (sample_y * heightmap->pitch) + sample_x;
-            float fy = (*pixel);
+            float fy = (*pixel) * 2.5f;
 
             //offset vista desde arriba
             fy -= height_offset;
 
-            // Coordenadas 3D de la cuadrícula
-            float fx = (x - (grid_size / 2)) * spacing; // x centrada
-            float fz = (z - (grid_size / 2)) * spacing; // z centrada
-
-            // Proyección en perspectiva
+            // perspectiva
             float px = cx + (fx * projection) / (z_offset + fz);
             float py = cy - (fy * projection) / (z_offset + fz);
 
@@ -150,8 +150,8 @@ int main ( int argc, char** argv)
   int req_h = 768; 
 
   /////////
-  static int offset_x_ = 10; // Offset inicial en X
-  static int offset_y_ = 10; // Offset inicial en Y
+  static int offset_x_ = 0; // Offset inicial en X
+  static int offset_y_ = 0; // Offset inicial en Y
   static int speed_x = 1;  // Velocidad en X
   static int speed_y = 1;  // Velocidad en Y
   ////////
@@ -215,20 +215,22 @@ int main ( int argc, char** argv)
  
 //    diagonal
  
-   offset_x_ += speed_x;
+    offset_x_ += speed_x;
     offset_y_ += speed_y;
 
-    if (offset_x_ + 80 >= heightmap->w || offset_x_ <= 4) speed_x *= -1; 
-    if (offset_y_ + 80 >= heightmap->h || offset_y_ <= 4) speed_y *= -1; 
+    if (offset_x_ >= heightmap->w - 64 || offset_x_ <= 0) speed_x *= -1; 
+    if (offset_y_ >= heightmap->h - 64 || offset_y_ <= 0) speed_y *= -1; 
 
     //espiral
 ////////
     // Your gfx effect goes here
 
     ChronoWatchReset();
-    int n_draw = DoEffect (drawlist, n_vertices, g_SDLSrf->w, g_SDLSrf->h, dump, projection, heightmap, offset_x_, offset_y_);
+    int n, n_draw=0;
+    for (n=0; n<10; n++)
+       n_draw = DoEffect (drawlist, n_vertices, g_SDLSrf->w, g_SDLSrf->h, dump, projection, heightmap, offset_x_, offset_y_);
     assert(n_draw <= n_vertices);
-    ChronoShow ( "Landscape Loco Festival", n_draw);
+    ChronoShow ( "Landscape Loco Festival", n_draw * 10);
 
     // Draw vertices; don't modify this section
     // Lock screen to get access to the memory array
@@ -236,21 +238,22 @@ int main ( int argc, char** argv)
 
     // Clean the screenss
     SDL_FillRect(g_SDLSrf, NULL, SDL_MapRGB(g_SDLSrf->format, 0, 0, 0));
-    ChronoShow ( "Clean", g_SDLSrf->w * g_SDLSrf->h);
+    //ChronoShow ( "Clean", g_SDLSrf->w * g_SDLSrf->h);
 
     // Paint vertices
+
     DisplayVertices (g_SDLSrf->pixels, drawlist, n_draw, g_SDLSrf->pitch >> 2, palette);
-    ChronoShow ( "Preview", n_draw);
+    //ChronoShow ( "Preview", n_draw);
 
     //Unlock the draw surface, dump to physical screen
     ChronoWatchReset();
     SDL_UnlockSurface( g_SDLSrf);
     SDL_Flip( g_SDLSrf);
-    ChronoShow ( "Screen dump", g_SDLSrf->w * g_SDLSrf->h);
+    //ChronoShow ( "Screen dump", g_SDLSrf->w * g_SDLSrf->h);
 
     // Limit framerate and return any remaining time to the OS
     // Comment this line for benchmarking
-    FramerateLimit (60);
+    //FramerateLimit (60);
 
     dump++;
 
