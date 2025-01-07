@@ -42,61 +42,6 @@ static void FramerateLimit (int max_fps)
 }
 
 // ---------------------------------------------------------------------------
-//FIRST TRY WITHOUT FLOAT
-/*static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, float projection, SDL_Surface* heightmap, int offset_x, int offset_y) {
-    short* ori = drawlist; 
-    int grid_size = 64;
-    int origin_pos = grid_size >> 1;    
-    int spacing = 10 << 16; 
-    int z_offset = 1200 << 16;  
-    int height_offset = 500 << 16; 
-    int cx = (w >> 1) << 16;        
-    int cy = (h >> 1) << 16;        
-    unsigned char* tmp_pxl = (unsigned char*)heightmap->pixels;
-    int tmp_pitch = heightmap->pitch; 
-    int projection_16 = (int)projection << 16;
-
-    for (int z = 0; z < grid_size; z++) {
-        int sample_y = (offset_y + z);
-        int pitch_in_row = sample_y * tmp_pitch;
-        int fz = (z - origin_pos) * spacing; 
-        int zp = (z_offset + fz) << 16;
-        if(zp > 0){
-            int inv_zp = (1<<30) / zp;
-            int projection_inv_zp = (projection_16 * inv_zp) >> 16;
-       
-            for (int x = 0; x < grid_size; x++) {
-
-            // desplazamiento del sampple
-                int sample_x = (offset_x + x); 
-
-            // posiciones en pantalla 
-                int fx = (x - origin_pos) * spacing; 
-
-            // leer el pixel // posible optimización -> hacer un puntero temporal de tmp = heightmap->pixels
-                unsigned char pixel = tmp_pxl[pitch_in_row + sample_x];
-                int fy = (int)(pixel * 2.5f) << 16;
-
-            //offset vista desde arriba
-                fy -= height_offset;
-
-            // perspectiva
-                int px = (cx + ((fx * projection_inv_zp) >> 16)) >> 16;
-                int py = (cy - ((fy * projection_inv_zp) >> 16)) >> 16;
-
-            // comprobar que el punto está dentro de los límites de la pantalla
-                    drawlist[0] = (short)(px);     // Coordenada X proyectada
-                    drawlist[1] = (short)(py);     // Coordenada Y proyectada
-    
-                    drawlist[2] = (z + (x << 1)) & 0xff;           // Color del punto
-                    drawlist += 3;               // Avanzar al siguiente punto
-              }
-        }
-    }
-
-    // Número total de vértices generados
-    return (drawlist - ori) / 3;
-}*/
 
 static void preCalculate(short* px_drawlist, float projection_, int w)
 {
@@ -121,7 +66,9 @@ static void preCalculate(short* px_drawlist, float projection_, int w)
 
 }
 
-static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, float projection, SDL_Surface* heightmap, int offset_x, int offset_y, short* px_drawlist) {
+// ---------------------------------------------------------------------------
+
+/* static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, float projection, SDL_Surface* heightmap, int offset_x, int offset_y, short* px_drawlist) {
     short* ori = drawlist; 
     int grid_size = 64;
     int origin_pos = grid_size >> 1;    
@@ -167,60 +114,57 @@ static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, 
     // Número total de vértices generados
     return (drawlist - ori) / 3;
 }
-/*static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, float projection, SDL_Surface* heightmap, int offset_x, int offset_y) {
+ */
+
+// ---------------------------------------------------------------------------
+
+static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, float projection, SDL_Surface* heightmap, int offset_x, int offset_y, short* px_drawlist) {
     short* ori = drawlist; 
     int grid_size = 64;
     int origin_pos = grid_size >> 1;    
-    float spacing = 10.0f; 
-    float z_offset = 1200.0f;  
-    float height_offset = 500.0f; 
-    int cx = w >> 1;        
+    int spacing = 5; 
+    int z_offset = 600;  
+    int height_offset = 250;        
     int cy = h >> 1;        
-    unsigned char* tmp_pxl = (unsigned char*)heightmap->pixels;
-    int tmp_pitch = heightmap->pitch; 
+    unsigned char* tmp_pxl = (unsigned char*)heightmap->pixels  + offset_x;
+    int h_pitch = heightmap->pitch;
+
+    //int projection_scaled = (int)(projection * (1 << 16));
 
 
     for (int z = 0; z < grid_size; z++) {
-        int sample_y = (offset_y + z);
-        int pitch_in_row = sample_y * tmp_pitch;
-        float fz = (z - origin_pos) * spacing; 
-        float zp = z_offset + fz;
-        float inv_zp = 1.0f / zp;
-        float projection_inv_zp = projection * inv_zp;
-        if (zp > 0 && cy - (height_offset * projection_inv_zp) > 0) { 
+
+        int fz = (z - origin_pos) * spacing; 
+        int zp = z_offset + fz;
+
+        float inv_zp = (1.0f) / zp;
+        float p = (projection * inv_zp);
+        int pi = (int)(p * 262144.0f);
+
+        //calculo de la linea
+        unsigned char* line = tmp_pxl+ (offset_y + z) * h_pitch;
+        if (zp > 0 && cy - (height_offset * p) > 0) { 
             for (int x = 0; x < grid_size; x++) {
 
-            // desplazamiento del sampple
-                int sample_x = (offset_x + x); 
-            // posiciones en pantalla 
-                float fx = (x - origin_pos) * spacing; 
+                int pixel = line[x];
+                int fy = pixel;
 
-            // leer el pixel // posible optimización -> hacer un puntero temporal de tmp = heightmap->pixels
-                unsigned char pixel = tmp_pxl[pitch_in_row + sample_x];
-                float fy = (pixel) << 1;
-
-            //offset vista desde arriba
                 fy -= height_offset;
 
-            // perspectiva
-                float px = cx + (fx * projection_inv_zp);
-                float py = cy - (fy * projection_inv_zp);
+                int px = *px_drawlist++;                
+                float py = cy - ((fy * pi) >> 18);
 
-            // comprobar que el punto está dentro de los límites de la pantalla
-                    drawlist[0] = (short)px;     // Coordenada X proyectada
-                    drawlist[1] = (short)py;     // Coordenada Y proyectada
-    
-                    drawlist[2] = (z + (x << 1)) & 0xff;           // Color del punto
-                    drawlist += 3;               // Avanzar al siguiente punto
+                drawlist[0] = (short)px;     // Coordenada X proyectada
+                drawlist[1] = (short)py;     // Coordenada Y proyectada
+                drawlist[2] = 255;         // Color del punto
+                drawlist += 3;               // Avanzar al siguiente punto
               }
         }
     }
 
     // Número total de vértices generados
     return (drawlist - ori) / 3;
-}*/
-
-
+}
 // ---------------------------------------------------------------------------
 
 static void DisplayVertices (unsigned int* pixels, short* drawlist, int n_vertices, int stride, unsigned int* palette)
