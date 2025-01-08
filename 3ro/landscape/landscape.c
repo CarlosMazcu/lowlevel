@@ -146,13 +146,11 @@ static int DoEffect(short* drawlist, int max_vertices, int w, int h, int frame, 
         if (zp > 0 && cy - (height_offset * p) > 0) { 
             for (int x = 0; x < grid_size; x++) {
 
-                int pixel = line[x];
-                int fy = pixel;
-
+                int fy = line[x];
                 fy -= height_offset;
 
                 int px = *px_drawlist++;                
-                float py = cy - ((fy * pi) >> 18);
+                int py = cy - ((fy * pi) >> 18);
 
                 drawlist[0] = (short)px;     // Coordenada X proyectada
                 drawlist[1] = (short)py;     // Coordenada Y proyectada
